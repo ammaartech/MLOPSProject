@@ -1,0 +1,6 @@
+psutil
+pandas
+scikit-learn
+matplotlib
+streamlit
+mlflow
