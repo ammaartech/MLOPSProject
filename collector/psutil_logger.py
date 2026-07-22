@@ -2,7 +2,7 @@ import time
 import psutil
 from datetime import datetime
 
-from config import DISK_PATH, SAMPLE_INTERVAL
+import config
 from crud.metrics_crud import create_metric, count_metrics
 
 
@@ -10,7 +10,7 @@ def collect_metrics():
     # interval=1 blocks ~1s and returns CPU % over that second (accurate)
     cpu = psutil.cpu_percent(interval=1)
     mem = psutil.virtual_memory()
-    disk = psutil.disk_usage(DISK_PATH)
+    disk = psutil.disk_usage(config.get_str("collector.disk_path"))
 
     return {
         "ts": datetime.now().isoformat(timespec="seconds"),
@@ -35,12 +35,17 @@ def log_once(verbose=True):
     return record
 
 
-def run_logger(interval=SAMPLE_INTERVAL, duration=None):
+def run_logger(interval=None, duration=None, verbose=True):
+    # Read at call time, not as a default argument: a default is bound
+    # once at import, so the collector would keep using whatever the
+    # interval was when the module first loaded even after it changed.
+    interval = interval or config.get_int("collector.sample_interval_sec")
+
     print(f"Logger started | interval={interval}s | duration={duration or 'infinite'}")
     start = time.time()
     try:
         while True:
-            log_once()
+            log_once(verbose=verbose)
             if duration and (time.time() - start) >= duration:
                 break
             # cpu_percent already blocked ~1s, so sleep the remainder

@@ -449,6 +449,15 @@ DEFAULT_CONFIG = [
     ("promotion.require_beat_baseline", "true", "bool", "promotion",
      "A challenger that loses to the naive baseline is never promoted, "
      "however well it scores against the incumbent"),
+    ("promotion.min_cv_folds_won", "0.75", "float", "promotion",
+     "Fraction of rolling-origin CV folds a challenger must win against "
+     "persistence. A single holdout can land on a favourable window: one "
+     "model beat persistence by 10% on the holdout while losing 2 of 4 "
+     "folds and scoring 16.2 vs 4.3 on the earliest one."),
+    ("promotion.max_cv_std_ratio", "2.0", "float", "promotion",
+     "Reject when the challenger's fold-to-fold MAE spread exceeds this "
+     "multiple of the baseline's. An unstable model that averages well "
+     "still fails unpredictably in production."),
 
     # ---- stage 12: drift -----------------------------------------------
     ("drift.window", "50", "int", "drift",

@@ -184,14 +184,30 @@ def train_one(df, target, run_id=None, data_fingerprint=None,
             return None
         return round((reference - model_mae) / reference * 100, 2)
 
-    # --- rolling-origin CV ----------------------------------------------
-    cv_scores = []
+    # --- rolling-origin CV, scoring persistence on the SAME folds -------
+    # The baseline has to be measured fold by fold too. A single holdout
+    # can land on a favourable stretch: this model beat persistence by 10%
+    # on the holdout while losing half the folds and scoring 16.2 against
+    # 4.3 on the earliest one, where it trained on idle data and was
+    # tested on load. The gate needs to see that.
+    cv_scores, cv_baseline_scores = [], []
+    lag0 = f"{target}_lag_0"
     for fold in rolling_origin_splits(X[selected], y):
         cv_model = GradientBoostingRegressor(**params)
         cv_model.fit(fold["X_train"], fold["y_train"])
         cv_scores.append(float(mean_absolute_error(
             fold["y_test"], cv_model.predict(fold["X_test"])
         )))
+        if lag0 in fold["X_test"].columns:
+            cv_baseline_scores.append(float(mean_absolute_error(
+                fold["y_test"], fold["X_test"][lag0]
+            )))
+
+    folds_won = sum(
+        1 for m, b in zip(cv_scores, cv_baseline_scores) if m < b
+    )
+    cv_folds_won_frac = (folds_won / len(cv_baseline_scores)
+                         if cv_baseline_scores else None)
 
     # --- error by regime -------------------------------------------------
     regime_errors = pd.DataFrame()
@@ -210,6 +226,13 @@ def train_one(df, target, run_id=None, data_fingerprint=None,
         "feature": selected,
         "importance": model.feature_importances_,
     }).sort_values("importance", ascending=False).reset_index(drop=True)
+
+    # Re-score the incumbent champion on THIS test window, so the
+    # promotion gate compares like with like. Without it the gate weighs a
+    # new score against one recorded on a different, possibly easier
+    # dataset — which rejected a model that had beaten the live baseline
+    # by 10%.
+    champion_mae_same_window = _score_champion(target, split_full)
 
     # --- materialise the exact training set ------------------------------
     # The SELECTED columns, because that is what the model consumes and
@@ -235,19 +258,31 @@ def train_one(df, target, run_id=None, data_fingerprint=None,
         "selected_features": selected,
         "mae": round(model_mae, 4),
         "rmse": round(model_rmse, 4),
-        "baseline_mae": round(strongest_mae, 4) if strongest_mae else None,
+        # `is not None`, not truthiness: a perfect baseline has MAE 0.0,
+        # which is falsy. Treating that as "no baseline" let a model with
+        # non-zero error past a gate it should have failed.
+        "baseline_mae": (round(strongest_mae, 4)
+                         if strongest_mae is not None else None),
         "baseline_name": strongest_name,
         "persistence_mae": persistence_mae,
         "old_baseline_mae": old_baseline_mae,
         "improvement_pct": improvement(strongest_mae),
         "improvement_vs_persistence_pct": improvement(persistence_mae),
         "improvement_vs_old_baseline_pct": improvement(old_baseline_mae),
+        "champion_mae_same_window": champion_mae_same_window,
         "beats_baseline": strongest_mae is not None and model_mae < strongest_mae,
         "flat_signal": is_flat,
         "inference_ms": round(inference_ms, 4),
         "cv_mae_mean": round(float(np.mean(cv_scores)), 4) if cv_scores else None,
         "cv_mae_std": round(float(np.std(cv_scores)), 4) if cv_scores else None,
         "cv_folds": len(cv_scores),
+        "cv_baseline_mae_mean": (round(float(np.mean(cv_baseline_scores)), 4)
+                                 if cv_baseline_scores else None),
+        "cv_baseline_mae_std": (round(float(np.std(cv_baseline_scores)), 4)
+                                if cv_baseline_scores else None),
+        "cv_folds_won": folds_won,
+        "cv_folds_won_fraction": (round(cv_folds_won_frac, 3)
+                                  if cv_folds_won_frac is not None else None),
         "ladder": ladder,
         "regime_errors": regime_errors,
         "importance": importance,
@@ -342,6 +377,34 @@ def predict_next(target, df=None):
 def _rung(ladder, name):
     match = ladder[ladder["baseline"] == name]
     return float(match["mae"].iloc[0]) if not match.empty else None
+
+
+def _score_champion(target, split):
+    """MAE of the current trained champion on this split's test window.
+
+    Returns None when there is no champion, when the champion is a
+    baseline (persistence is already on the ladder), or when its feature
+    set is not a subset of what is available now — a champion trained on
+    features that no longer exist cannot be re-scored, and guessing would
+    be worse than declining to.
+    """
+    model_id = champion_id(target)
+    if model_id is None or str(model_id).startswith("baseline-persistence"):
+        return None
+
+    bundle = load_model(model_id)
+    if bundle is None:
+        return None
+
+    missing = [c for c in bundle["features"] if c not in split["X_test"].columns]
+    if missing:
+        return None
+
+    try:
+        predictions = bundle["model"].predict(split["X_test"][bundle["features"]])
+        return round(float(mean_absolute_error(split["y_test"], predictions)), 4)
+    except Exception:                                      # noqa: BLE001
+        return None
 
 
 def format_one(r):

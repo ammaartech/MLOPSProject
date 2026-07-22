@@ -1,0 +1,23 @@
+artifact_path: file:///C:/Users/Ammaar/Desktop/MLOPS/MLOPSProject/mlruns/1/models/m-4d9551cd7d3c44c88bf12e04c05fdde2/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.skops
+    predict_fn: predict
+    python_version: 3.12.1
+  sklearn:
+    code: null
+    pickled_model: model.skops
+    serialization_format: skops
+    sklearn_version: 1.9.0
+    skops_trusted_types: null
+mlflow_version: 3.14.0
+model_id: m-4d9551cd7d3c44c88bf12e04c05fdde2
+model_size_bytes: 5151153
+model_uuid: m-4d9551cd7d3c44c88bf12e04c05fdde2
+prompts: null
+run_id: 2fac66768f68479ea2340d74ff7d08bf
+utc_time_created: '2026-07-22 11:40:28.469352'

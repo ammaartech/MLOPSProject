@@ -1,6 +1,6 @@
 # Predictive Resource Monitoring System
 
-MLOps internship project. Solo build, ~4 days remaining.
+MLOps internship project. Solo build.
 
 ## Problem statement
 
@@ -10,204 +10,263 @@ MLOps internship project. Solo build, ~4 days remaining.
 > allocation strategies to improve application performance and reduce
 > infrastructure costs.
 
-Four clauses, all of which must be visibly addressed:
-1. Continuously analyze historical utilization -> collector + CRUD + SQLite
+Four clauses, each with a home:
+
+1. Continuously analyse historical utilisation -> `collector/`, `pipeline/`,
+   `orchestration/scheduler.py`
 2. Forecast CPU / memory / storage -> `model/`
 3. Recommend allocation strategies -> `service/recommender.py`
-4. Improve performance + reduce cost -> `service/cost_model.py` + SLA guardrail
+4. Improve performance + reduce cost -> `service/cost_model.py`,
+   `evaluation/backtest.py`
 
 ## Core idea
 
-Watch resource usage -> forecast the next 60s -> recommend the smallest
-allocation that stays safe -> price it against static over-provisioning.
-The output is a dollar figure, not just a prediction.
+Watch usage -> forecast the next 60s -> recommend the smallest allocation
+that stays inside the SLA -> price it against static over-provisioning ->
+**replay the whole thing to check the number is real**.
+
+---
+
+## Environment
+
+**Use the venv.** The system Python has none of the dependencies.
+
+```powershell
+.\.venv\Scripts\python.exe -m orchestration.run_pipeline
+```
+
+Run modules from the project root with `-m`, dotted, no extension.
+`python model/forecast.py` breaks imports. Streamlit is the exception:
+`streamlit run dashboard/app.py`.
+
+---
 
 ## Architecture
 
 ```
-config.py                 # ALL constants: paths, AWS prices, node capacity,
-                          # headroom, horizon, hyperparameters, MLflow settings
-main.py                   # menu-driven CLI (match/case)
+config.py                   typed cached READER over the config table
+database/schema.py          every table definition + seed defaults
+database/connection.py      connect + one-time init (WAL enabled)
+crud/                       query.py, metrics_crud.py, config_crud.py
 
-database/connection.py    # SQLite conn + creates `metrics` table
-crud/query.py             # execute_query(), PARAMETERIZED (no f-string SQL)
-crud/metrics_crud.py      # create/read_all/read_latest/read_between/
-                          # count/update/delete/purge_before
+pipeline/                   THE DATA PLANE — stages 1-6
+  sources.py         [1]    SQLiteSource, CSVSource, HTTPSource, StreamSource
+  schema.py          [2]    contract from schema_contract; coerce + validate
+  etl.py             [3]    sequences 1-6, writes lineage, blocks on gate FAIL
+  validate.py        [4]    13 checks -> PASS/WARN/FAIL; cadence + gap detection
+  clean.py           [5]    dedupe, clip, SEGMENT ON GAPS, regrid, Hampel, impute
+  transform.py       [6]    deltas, EWMA, trend, headroom, regimes, rollup tiers
 
-collector/psutil_logger.py    # samples CPU/mem/disk -> DB every N sec
-collector/load_generator.py   # sine-wave CPU load across all cores
+model/                      FEATURES AND MODEL — stages 7-11
+  features.py        [7]    gap-aware lags/rolling/interactions; lag_0 included
+  selection.py       [8]    variance, correlation, permutation importance
+  scaling.py         [9]    standard/minmax/robust, FIT ON TRAIN ROWS ONLY
+  feature_store.py   [10]   offline + online stores, versioned, PIT join
+  forecast.py        [11]   train, evaluate vs ladder, register with lineage
+  tuning.py          [11]   randomised search, rolling-origin CV
+  baseline.py               the six-rung baseline ladder
+  horizon.py                thin wrapper over serving.predictor
 
-conversion/csv_export.py  # metrics table -> CSV
+tracking/                   MLOPS PLANE
+  mlflow_tracker.py         MLflow logging + the promotion gate
+  lineage.py                prediction -> model -> features -> data -> config
 
-model/features.py         # time-series -> supervised table
-                          # lags [1,3,5,10,20], rolling mean/std/max (win 10),
-                          # hour/minute/dayofweek
-model/baseline.py         # naive "next = current" predictor
-model/forecast.py         # GradientBoosting per target, CHRONOLOGICAL split,
-                          # evaluates vs baseline, saves joblib, predict_next()
-model/horizon.py          # iterative multi-step forecast (20 steps = 60s)
+serving/                    STAGE 12 — deployment
+  predictor.py              serves the champion; logs and scores predictions
+  drift.py                  rolling error + PSI; triggers retrain
 
-service/cost_model.py     # utilization % -> provisioned units -> dollars
-service/recommender.py    # forecast P95 -> +headroom -> SAFETY FLOOR -> cost
+evaluation/backtest.py      walk-forward replay, five competing policies
+service/cost_model.py       pricing, breach accounting (episodes, not just rate)
+service/recommender.py      forecast -> headroom -> safety floor -> dollars
 
-tracking/mlflow_tracker.py  # MLflow logging + champion/challenger gating
+orchestration/
+  run_pipeline.py           ALL twelve stages, one command
+  scheduler.py              the continuous loop, optional in-process collector
 
-dashboard/app.py          # Streamlit, 5s auto-refresh
-data/                     # metrics.db, models/, mlflow.db
+dashboard/app.py            5 tabs, reads artifacts, EDITS config live
+main.py                     menu covering everything above
 ```
 
-## Schema
+---
 
-```sql
-metrics(
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    ts           TEXT NOT NULL,      -- ISO, sorts correctly as text
-    cpu_percent  REAL,
-    mem_percent  REAL,
-    mem_used_mb  REAL,
-    disk_percent REAL,
-    disk_used_gb REAL
-)
-```
+## Non-negotiables (DO NOT BREAK)
+
+- **Nothing is hardcoded.** Every price, threshold, lag, SLA target and
+  hyperparameter is a row in `config`. `config.py` reads; it does not
+  define. The sole exception is `DB_PATH` (env `RESOURCE_MONITOR_DB`),
+  which must exist before the table can be read. New settings go in
+  `DEFAULT_CONFIG` in `database/schema.py`, which seeds with
+  `INSERT OR IGNORE` and never overwrites a live value.
+
+- **Segment boundaries are hard walls.** Every lag, rolling window and
+  diff runs inside `groupby("segment_id")`. The data has three collection
+  gaps, the longest 26.7 minutes. A gap-blind build keeps 366 rows; the
+  correct one keeps 282.
+
+- **`features.lags` starts at 0.** `lag_0` is the current value. Without
+  it, features end at *t-1* while the target is *t+1* — a two-step
+  problem labelled one-step. That framing is where the old "+15.2% over
+  naive" came from.
+
+- **Chronological split, never shuffle.** Rolling-origin CV for folds,
+  never `KFold`. `RandomizedSearchCV` defaults to shuffled folds, which is
+  why `tuning.py` implements its own loop.
+
+- **Scalers fit on training rows only.**
+
+- **Baselines evaluate on the FULL feature frame.** Selection can drop
+  `lag_1` or `roll_mean`, which would silently delete ladder rungs.
+
+- **Parameterized SQL only.** `update_metric` whitelists column names.
+
+- **`execute_insert` for inserts needing the new id.** `execute_query`
+  opens a connection per statement, so `last_insert_rowid()` on a second
+  call always returns 0.
+
+- **Use `is not None`, not truthiness, on MAE.** A perfect baseline scores
+  0.0, which is falsy; treating that as "no baseline" let a worse model
+  through the gate.
+
+- **Regrid buckets, it does not match.** `reindex` onto a `date_range`
+  silently discarded every off-grid timestamp — a third of the data. The
+  series has mixed cadence (3s / 4s / 5s), so `resample` is required.
+
+- **Rollups drop empty buckets.** `resample` spans the whole range, so a
+  multi-day collection break produced 29,396 empty 15-second rows.
+
+- **MLflow 3.x needs a SQLite backend.** `./mlruns` is gone. Use
+  `sqlite:///data/mlflow.db`. `log_model(model, name=...)`;
+  `artifact_path=` is deprecated.
+
+- **The load generator is required for a forecastable CPU signal.** An
+  idle laptop is flat.
+
+---
 
 ## Current results
 
-Data: 287 samples @ 3s intervals, with load-generator sine waves (0-100% CPU).
+776 raw samples -> 808 cleaned rows, 6 segments, 682 usable feature rows
+(a gap-blind build would have kept 787; 105 rows are contaminated).
+Includes a 20-minute load-generator session: CPU 1.7%-100%, std 35.4.
 
-Forecasting:
+### CPU baseline ladder
 
-| Resource | Model MAE | Naive MAE | Verdict            | Inference |
-|----------|-----------|-----------|--------------------|-----------|
-| CPU      | 5.251     | 6.193     | +15.2% beats naive | 0.013 ms  |
-| Memory   | 0.308     | 0.072     | flat, naive wins   | 0.012 ms  |
-| Disk     | 0.000     | 0.000     | flat, nothing to predict | 0.013 ms |
+| Predictor | MAE |
+|---|---|
+| **MODEL (gradient boosting)** | **4.998** |
+| persistence | 5.559 |
+| ridge | 5.734 |
+| persistence_lag1 (the old baseline) | 6.856 |
+| drift | 9.575 |
+| seasonal naive | 12.507 |
+| rolling mean | 12.733 |
 
-Recommendation + cost:
+Memory: persistence 0.109, model 0.250 — flat.
+Disk: persistence 0.000, model 0.000 — flat.
 
-| Resource | Forecast P95 | Forecast wanted | Safety-floored | Breaches |
-|----------|--------------|-----------------|----------------|----------|
-| CPU      | 47.45%       | 56.94%          | 91.94%         | 5.0%     |
-| Memory   | 68.64%       | 82.37%          | 82.37%         | 0.0%     |
-| Disk     | 85.70%       | 100%            | 100%           | 0.0%     |
+### The holdout win does not survive cross-validation
 
-Static (100% provisioned): $380.24/mo
-Predictive allocation:     $342.88/mo
-Savings:                   $37.36/mo (9.8%) at <=5% SLA breach
+On the single chronological holdout the model beats persistence by
+**+10.09%**. Fold by fold it does not:
 
-## Key decisions & gotchas (DO NOT BREAK THESE)
+| Fold | Train | Model | Persistence | Winner |
+|---|---|---|---|---|
+| 0 | 272 | **16.220** | 4.298 | persistence |
+| 1 | 374 | 5.660 | 5.648 | persistence |
+| 2 | 476 | 5.779 | 6.331 | model |
+| 3 | 578 | 4.880 | 5.310 | model |
 
-- **Chronological split, never shuffle.** Time-series shuffling leaks the
-  future into training. `chronological_split()` in forecast.py.
-- **Parameterized SQL only.** No f-string interpolation of user values.
-  `update_metric()` whitelists column names.
-- **Flat-signal handling.** When naive MAE < 0.5 the improvement percentage
-  explodes (was showing -326%). We report absolute MAE instead. This is
-  deliberate and is part of the honest-tradeoff narrative.
-- **Safety floor is intentional.** The forecast wants CPU at 56.94% but that
-  breaches 35% of the time, so the floor raises it to 91.94% for <=5%.
-  This tension IS the finding, not a bug.
-- **MLflow 3.x deprecated the file-based `./mlruns` backend.** Must use a
-  SQLite backend: `sqlite:///data/mlflow.db`. Most online tutorials are stale.
-- **`log_model(model, name="model")`** is the MLflow 3.x signature
-  (`artifact_path=` is deprecated). Code has a try/except fallback for 2.x.
-- **Laptop data is flat when idle.** The load generator is required to
-  produce a forecastable signal. Run it alongside the logger.
-- **Windows + spaces in path.** Project lives in a folder with a space
-  ("MLOPS Project") - quote paths in shell commands.
-- **Run modules from project root with `-m`**, dotted, no extension:
-  `python -m model.forecast`. Running `python model/forecast.py` breaks
-  imports. Streamlit is the exception: `streamlit run dashboard/app.py`.
+Model **8.135 +/- 4.681**; persistence **5.397 +/- 0.733**. Two folds each.
 
-## Pricing basis
+Fold 0 trains on the older idle data and is tested on load — the model
+collapses to 16.2 where persistence barely moves. The model can win when
+trained on enough same-regime data, but it is fragile across a regime
+change and persistence is six times more stable.
 
-AWS us-east-1, on-demand, verified July 2026:
-- Compute:  $0.04048 / vCPU-hour   (Fargate)
-- Memory:   $0.004445 / GB-hour    (Fargate)
-- Storage:  $0.08 / GB-month       (EBS gp3)
+### Promotion gate
 
-Reference node modeled: 8 vCPU / 32 GB RAM / 500 GB storage.
+All three challengers REJECTED; persistence baselines serve production.
+CPU is rejected by the CV-stability criterion added because of exactly
+the result above:
 
-## Commands
-
-```powershell
-# collect (run both together, separate terminals)
-python -c "from collector.psutil_logger import run_logger; run_logger(interval=3)"
-python -m collector.load_generator
-
-# train + evaluate
-python -m model.forecast
-python -m model.horizon
-
-# recommend
-python -m service.cost_model
-python -m service.recommender
-
-# tracking
-python -m tracking.mlflow_tracker
-mlflow ui --backend-store-uri sqlite:///data/mlflow.db
-
-# dashboard
-streamlit run dashboard/app.py
-
-# export
-python -m conversion.csv_export
-
-# sanity check
-python -c "from crud.metrics_crud import count_metrics; print(count_metrics())"
+```
+cpu_percent: REJECTED
+  beat the baseline on the holdout but won only 2/4 CV folds
+  (50%, threshold 75%). CV MAE 8.1349 vs baseline 5.3968.
+  One favourable window is not evidence.
 ```
 
-## TODO (priority order)
+### Backtest (35 decisions, replayed)
 
-### Tier 1 - must do
-1. **Run + verify MLflow.** Code written, never executed. Run twice; the
-   second pass should print REJECTED, proving the promotion gate works.
-2. **Backtest / replay.** THE BIGGEST EVIDENCE GAP. The 9.8% figure is a
-   single snapshot from one instant. Replay all 287 samples, make an
-   allocation decision at every step, accumulate cost + breach rate vs
-   static. Produces a chart and a defensible measured result.
-3. **Drift detection + auto-retrain.** Track rolling forecast error; when it
-   degrades past a threshold, retrain automatically and let the promotion
-   gate decide deployment. This is the "continuously" clause and the main
-   thing separating MLOps from a notebook.
+| Policy | $/month | Worst breach | Saving | SLA |
+|---|---|---|---|---|
+| predictive, no floor | 264.01 | 39.00% | 30.57% | **no** |
+| oracle | 275.44 | 0.00% | 27.56% | yes |
+| predictive | 362.32 | 8.43% | 4.71% | **no** |
+| **reactive P95 (no model)** | **370.66** | **4.14%** | **2.52%** | **yes** |
+| static 100% | 380.24 | 0.00% | — | yes |
 
-### Tier 2 - high impact
-4. **Multi-pattern load generator** (bursty / step / sawtooth). Model
-   currently only knows "smooth sine". Switching patterns mid-demo is what
-   TRIGGERS drift live - best demo moment available.
-5. **Cost-vs-SLA tradeoff curve.** Sweep allocation levels, plot cost against
-   breach rate, mark the knee. Turns the CPU tension into the headline finding.
-6. **Wire champion into serving.** `predict_next()` and `horizon.py` load
-   `{target}.joblib`, NOT `{target}_champion.joblib`. Promotion gating
-   currently decides nothing.
+Savings fell (3.96% -> 2.52%) because the load generator made the machine
+genuinely busy. Less idle capacity means less to reclaim — which is the
+correct behaviour, not a regression.
 
-### Tier 3 - polish
-- Add Forecast/Recommend options to `main.py` (menu is incomplete)
-- Add `host` column to schema (answers "how does this scale to a fleet?")
-- Orchestrator: one command starts collector + scheduler + drift monitor
-- Data quality gate before training (row count, nulls, >100% values, gaps)
-- Wire `purge_before()` to a retention schedule (written, never called)
-- Pin `requirements.txt` versions
-- README + slides + rehearse twice
-
-### Explicitly out of scope
-- Autonomous self-healing (killing processes, restarting Docker, deleting
-  files). Off-brief, unprovable with n=3 interventions, risks breaking the
-  dev machine days before demo.
-- Bitbrains / Google Borg traces. Nice-to-have; not worth the wrangling time.
-- FastAPI / Docker / Kubernetes. Surface area, not evidence.
+---
 
 ## Headline claims
 
-1. +15.2% forecast accuracy over naive baseline (CPU) at 0.013 ms/prediction
-2. 9.8% infrastructure cost reduction while holding SLA breaches <=5%
-3. Zero cloud spend - entire stack runs on one laptop
+1. **The measured, SLA-compliant saving is 2.52%** — and it comes from the
+   allocation policy, not from forecasting. The model-driven policy saves
+   more only by breaching the SLA (8.43% against a 5% budget).
+2. **A 10% accuracy win was caught as luck.** The gate rejects on
+   cross-validated stability, not a single holdout.
+3. **Full lineage**: any prediction traces to model, feature version, ETL
+   run, data fingerprint, config fingerprint and the quality warnings that
+   applied at training time.
+4. Zero cloud spend — the whole stack runs on one laptop.
+
+---
 
 ## Narrative for judges
 
 - Most projects stop at forecasting. This closes the loop:
-  predict -> decide -> price -> validate.
-- Honest tradeoff: CPU has exploitable dynamics so the model beats naive by
-  15%; memory and disk were stable so naive is already near-optimal. Knowing
-  when a model adds nothing is itself an engineering result.
-- The safety floor demonstrates the real cost/reliability tension: the
-  forecast wanted a lean 57% allocation, the SLA constraint forced 92%.
+  predict -> decide -> price -> **replay to verify**.
+- **Three times the measurement infrastructure caught its own project.**
+  (a) The first version reported +15.2% over naive; the baseline ladder
+  showed "naive" was measured two steps back. (b) With more data the model
+  genuinely beat persistence by 10% on the holdout; rolling-origin CV
+  showed it lost half the folds and scored 16.2 vs 4.3 on the earliest.
+  (c) The gate compared a new model against a champion scored on
+  different data, so incumbents are now re-scored on the current window.
+- The promotion gate has teeth. It rejects all three models and serves
+  measured baselines instead. A gate that has never rejected anything is
+  decoration.
+- The safety floor demonstrates the real cost/reliability tension:
+  removing it saves 30.57% and breaches 39% of the time.
+- **The model is not useless — it is unproven.** It wins on recent folds
+  and loses across a regime change. That is a data-volume problem with a
+  known fix, and the honest position is that it has not yet earned
+  production.
+
+---
+
+## TODO
+
+### Tier 1
+1. **Collect much more data with the load generator running.** 14 backtest
+   decisions is thin. Everything else is built; this is the binding
+   constraint on every number in the project.
+2. **Multi-pattern load generator** (bursty / step / sawtooth). Switching
+   pattern mid-demo is what triggers drift live — the best demo moment
+   available, and the drift path is already wired.
+
+### Tier 2
+3. Add a `host` column and a second collector, to answer "how does this
+   scale to a fleet?" — `sources.HTTPSource` already exists for it.
+4. Per-resource headroom shapes. The uniform `P95 x 1.20` asks for 102.8%
+   on disk, clips to 100%, and discards the entire saving.
+5. Slides + rehearse twice.
+
+### Explicitly out of scope
+- Autonomous self-healing. Off-brief and unprovable at this n.
+- Bitbrains / Google Borg traces.
+- FastAPI / Docker / Kubernetes. Surface area, not evidence.

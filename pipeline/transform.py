@@ -164,7 +164,13 @@ def rollup(df, freq="1min"):
         for col, stat in aggregated.columns
     ]
     aggregated["samples"] = frame[numeric[0]].resample(freq).size() if numeric else 0
-    return aggregated.reset_index()
+
+    # Drop buckets that contain no observations. `resample` spans the full
+    # range between the first and last timestamp, so a multi-day break in
+    # collection would otherwise produce tens of thousands of empty rows —
+    # the 15-second tier generated 29,396 of them across a five-day gap.
+    # A bucket with no samples is an absence, not a measurement.
+    return aggregated[aggregated["samples"] > 0].reset_index()
 
 
 def build_rollups(df):

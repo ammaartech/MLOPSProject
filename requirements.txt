@@ -1,6 +1,14 @@
-psutil
-pandas
-scikit-learn
-matplotlib
-streamlit
-mlflow
+# Pinned to the versions this system was built and measured against.
+#
+# MLflow 3.x matters specifically: the file-based ./mlruns backend was
+# removed, so tracking/mlflow_tracker.py requires a SQLite backend URI.
+# Most tutorials online still show the old form.
+psutil==7.2.2
+pandas==2.3.3
+numpy==2.5.1
+scikit-learn==1.9.0
+scipy==1.18.0
+joblib==1.5.3
+matplotlib==3.11.1
+streamlit==1.60.0
+mlflow==3.14.0

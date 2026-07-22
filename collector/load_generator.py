@@ -59,6 +59,25 @@ def wave_pattern(total_minutes=15, step_seconds=15):
     print("Load generation complete.")
 
 
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Generate a forecastable CPU load pattern."
+    )
+    parser.add_argument("--minutes", type=float, default=15,
+                        help="how long to run (default 15)")
+    parser.add_argument("--step", type=int, default=15,
+                        help="seconds per load level (default 15). The sine "
+                             "period is 16 steps, so 15s gives a 240s cycle — "
+                             "which is what model.seasonal_lag assumes.")
+    args = parser.parse_args()
+    wave_pattern(total_minutes=args.minutes, step_seconds=args.step)
+
+
+# The guard matters here: `multiprocessing` on Windows spawns children by
+# re-importing this module, so the burn processes must not re-trigger the
+# generator. Running it via `python -c "..."` breaks that and forks
+# uncontrollably — always launch with `python -m collector.load_generator`.
 if __name__ == "__main__":
-    # ~15 min of waves; adjust total_minutes as you like
-    wave_pattern(total_minutes=15, step_seconds=15)
+    main()
