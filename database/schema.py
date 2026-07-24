@@ -253,17 +253,28 @@ TABLES = {
     """,
 
     # Drift monitor decisions.
+    #
+    # `action` is what the monitor DECIDED to do; `outcome` is what actually
+    # happened once the retrain finished. They differ whenever a retrain ran
+    # and the promotion gate then rejected the result — which is the normal
+    # case on this data, and the thing an event log has to be able to say.
     "drift_events": """
         CREATE TABLE IF NOT EXISTS drift_events (
-            id            INTEGER PRIMARY KEY AUTOINCREMENT,
-            target        TEXT NOT NULL,
-            detected_at   TEXT NOT NULL,
-            window_mae    REAL,
-            reference_mae REAL,
-            ratio         REAL,
-            threshold     REAL,
-            action        TEXT,
-            detail        TEXT
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            target          TEXT NOT NULL,
+            detected_at     TEXT NOT NULL,
+            window_mae      REAL,
+            reference_mae   REAL,
+            ratio           REAL,
+            threshold       REAL,
+            action          TEXT,
+            detail          TEXT,
+            psi             REAL,
+            trigger         TEXT,
+            outcome         TEXT,
+            new_model_id    TEXT,
+            feature_version TEXT,
+            resolved_at     TEXT
         )
     """,
 
@@ -296,6 +307,53 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_pred_target_ts ON predictions(target, predicted_for_ts)",
     "CREATE INDEX IF NOT EXISTS idx_model_target_champ ON model_versions(target, is_champion)",
     "CREATE INDEX IF NOT EXISTS idx_qc_run ON quality_checks(run_id)",
+]
+
+
+# ----------------------------------------------------------------------
+# Column migrations
+# ----------------------------------------------------------------------
+# `CREATE TABLE IF NOT EXISTS` does nothing to a table that already exists,
+# so a column added to a definition above never reaches a database created
+# before the change. These are applied with ALTER TABLE ADD COLUMN, guarded
+# by a check against PRAGMA table_info, so running them repeatedly is safe.
+#
+# Adding a column is the only migration shape allowed here. SQLite cannot
+# drop or retype a column without rebuilding the table, and silently
+# rebuilding a table that holds a user's measured history is not something
+# an init path should ever do.
+#
+# (table, column, column_definition)
+
+COLUMN_MIGRATIONS = [
+    ("drift_events", "psi", "REAL"),
+    ("drift_events", "trigger", "TEXT"),
+    ("drift_events", "outcome", "TEXT"),
+    ("drift_events", "new_model_id", "TEXT"),
+    ("drift_events", "feature_version", "TEXT"),
+    ("drift_events", "resolved_at", "TEXT"),
+]
+
+
+# ----------------------------------------------------------------------
+# Config keys that must be present in `features.defining_keys`
+# ----------------------------------------------------------------------
+# `features.defining_keys` lists the settings that change what a feature
+# VALUE means; the feature store hashes them into its version id. A key
+# added to the system later has to join that list, or changing it would
+# alter the features while leaving the version id — and therefore the
+# train/serve compatibility check — unchanged.
+#
+# This is MERGED into whatever the database holds, never overwritten. A
+# value the user has edited keeps every key they put there.
+
+DEFINING_KEYS_REQUIRED = [
+    "encoding.enabled",
+    "encoding.method",
+    "encoding.columns",
+    "encoding.drop_first",
+    "encoding.categories",
+    "encoding.use_in_model",
 ]
 
 
@@ -392,6 +450,36 @@ DEFAULT_CONFIG = [
      "Config keys that change what a feature VALUE means. Hashed into the "
      "feature-store version id so train and serve cannot silently diverge."),
 
+    # ---- stage 6/7: categorical encoding --------------------------------
+    # `regime` (idle / ramp / saturated) is the one non-numeric column the
+    # system produces. Before encoding it existed only as a text label used
+    # for error reporting, and the model never saw it at all.
+    ("encoding.enabled", "true", "bool", "encoding",
+     "Whether the analysis stage encodes categorical columns at all"),
+    ("encoding.method", "onehot", "str", "encoding",
+     "onehot | ordinal. One-hot makes no ordering claim and suits a tree. "
+     "Ordinal is one column and assumes idle < ramp < saturated, which is "
+     "true for regime but is an assumption the config should state."),
+    ("encoding.columns", '["regime"]', "json", "encoding",
+     "Categorical columns the encoder processes"),
+    ("encoding.drop_first", "false", "bool", "encoding",
+     "Drop the first one-hot column to avoid the dummy-variable trap. "
+     "Only matters for linear models; a tree is unaffected, and keeping "
+     "every level makes the encoded frame readable."),
+    ("encoding.categories", "{}", "json", "encoding",
+     "Explicit category vocabulary per column, e.g. "
+     '{"regime": ["idle", "ramp", "saturated", "unknown"]}. Left empty, '
+     "`regime` derives its vocabulary from the keys of regime.bounds. The "
+     "vocabulary is FIXED and never read from the data: a serving row "
+     "holding one regime must still produce every column training saw."),
+    ("encoding.unknown_label", "unknown", "str", "encoding",
+     "Category assigned to a null or unrecognised value. Always part of "
+     "the vocabulary, so an unseen value cannot change the column set."),
+    ("encoding.use_in_model", "true", "bool", "encoding",
+     "Whether encoded columns are offered to the model as features. "
+     "Ablatable: turning this off and retraining measures what the regime "
+     "label is actually worth."),
+
     # ---- stage 8: feature selection ------------------------------------
     ("selection.corr_threshold", "0.95", "float", "selection",
      "Two features correlated above this are near-duplicates"),
@@ -468,6 +556,23 @@ DEFAULT_CONFIG = [
      "Rolling MAE this many times the training MAE triggers retraining"),
     ("drift.auto_retrain", "true", "bool", "drift",
      "Whether a drift event automatically launches a retrain"),
+    ("drift.psi_threshold", "0.25", "float", "drift",
+     "Population Stability Index above which the input distribution counts "
+     "as majorly shifted. The conventional reading: <0.1 stable, 0.1-0.25 "
+     "moderate, >0.25 major."),
+    ("drift.retrain_on_feature_drift", "true", "bool", "drift",
+     "Allow feature drift alone to trigger a retrain. Performance drift "
+     "needs actuals, which arrive a horizon late and never arrive at all "
+     "if the collector stops — so without this a system that has stopped "
+     "being fed can never notice its inputs moved."),
+    ("drift.retrain_cooldown_sec", "900", "int", "drift",
+     "Minimum seconds between retrains of the same target. Drift persists "
+     "until a better model is found, so without a cooldown a single "
+     "sustained shift retrains on every single monitor cycle."),
+    ("drift.categorical_columns", '["regime"]', "json", "drift",
+     "Categorical columns monitored for distribution shift via their "
+     "encoded form. A change in regime occupancy is exactly what a change "
+     "of load-generator pattern looks like."),
 
     # ---- allocation policy ---------------------------------------------
     ("policy.headroom", "0.20", "float", "policy",

@@ -6,8 +6,15 @@ that series into the representations the rest of the system consumes:
 
     add_derived     rate-of-change, volatility, smoothed level, headroom
     label_regimes   idle / ramp / saturated, from bounds held in config
+    encode          the regime label as numbers a model can consume
     normalise_units MB -> GB and percent -> fraction, so units are stated
     rollup          retention tiers (15s / 1min / 5min)
+
+Encoding runs here, immediately after labelling, because `regime` is
+created two lines earlier and this is the stage whose job is making the
+data consumable. The encoder itself lives in `pipeline/encode.py`; see
+that module for why its category list comes from config rather than from
+the data in front of it.
 
 A note on stage 6 versus stage 9
 --------------------------------
@@ -30,6 +37,7 @@ import numpy as np
 import pandas as pd
 
 import config
+from pipeline import encode as encode_mod
 from pipeline import schema as schema_mod
 from pipeline.validate import detect_cadence
 
@@ -192,6 +200,7 @@ def transform(df):
 
     df, r = add_derived(df);      report.update(r)
     df, r = label_regimes(df);    report.update(r)
+    df, r = encode_mod.encode(df); report.update(r)
     df, r = normalise_units(df);  report.update(r)
     tiers, r = build_rollups(df); report.update(r)
 
@@ -211,6 +220,8 @@ def format_report(report):
         f"  unit columns         : {len(report['unit_columns_added'])} "
         f"{report['unit_columns_added']}",
         f"  regime occupancy     : {report['regime_occupancy_pct']}",
+        f"  encoded columns      : {report.get('encoded_columns_added', 0)} "
+        f"({report.get('encoding_method')})  {report.get('encoded_columns', [])}",
         f"  rollup tiers (rows)  : {report['rollup_tiers']}",
         "=" * 78,
     ]

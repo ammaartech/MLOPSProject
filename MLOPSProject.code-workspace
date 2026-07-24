@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "MLOPSProject",
+			"path": "."
+		},
+		{
+			"name": "analytics",
+			"path": "../ResourceAnalytics/analytics"
+		}
+	],
+	"settings": {}
+}

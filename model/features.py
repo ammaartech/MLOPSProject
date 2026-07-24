@@ -41,6 +41,7 @@ import numpy as np
 import pandas as pd
 
 import config
+from pipeline import encode as encode_mod
 from pipeline import schema as schema_mod
 from pipeline import transform as transform_mod
 from pipeline.etl import read_clean
@@ -91,6 +92,27 @@ def _add_rolling(data, target, window):
         )
         names.append(name)
     return names
+
+
+def _add_encoded(data):
+    """Numeric encoding of the categorical `regime` label.
+
+    The regime is the one non-numeric thing the pipeline produces, and it
+    carries real information the model was previously denied: which part of
+    the operating range a sample sits in. `pipeline.encode` turns it into
+    columns, using a vocabulary fixed in config so a one-row serving frame
+    produces exactly the columns training saw.
+
+    Row-wise, so unlike the lag and rolling blocks there is no segment
+    boundary to respect — a one-hot of the current row cannot reach across
+    a break.
+    """
+    encoded, _ = encode_mod.encode(data)
+    names = encode_mod.all_encoded_columns()
+    present = [n for n in names if n in encoded.columns]
+    for name in present:
+        data[name] = encoded[name].to_numpy()
+    return present
 
 
 def _add_calendar(data):
@@ -184,6 +206,9 @@ def build_feature_frame(df, target):
         feature_cols += _add_interactions(data, target, window)
     if config.get_bool("features.use_calendar"):
         feature_cols += _add_calendar(data)
+    if (config.get_bool("encoding.enabled")
+            and config.get_bool("encoding.use_in_model")):
+        feature_cols += _add_encoded(data)
 
     # The supervised target: the value `shift` steps into the future,
     # within this segment. Across a break there is no "next value", and
