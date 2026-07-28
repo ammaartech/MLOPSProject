@@ -1,0 +1,38 @@
+# Build context exclusions.
+#
+# The .venv alone is ~1.5 GB of Windows-only wheels (pywin32, .pyd files)
+# that would be useless in a Linux image and would bust the layer cache on
+# every rebuild. Dependencies come from requirements.txt instead.
+
+.venv/
+venv/
+env/
+
+.git/
+.gitignore
+.claude/
+
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Runtime state. These are bind-mounted at run time, not baked into the
+# image — an image carrying a 82 MB SQLite database is a stale snapshot
+# the moment it is pushed.
+data/
+mlruns/
+
+# Generated documentation and analysis output.
+graphify-out/
+
+# Windows launcher; the container entrypoint replaces it.
+run.bat
+
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+*.code-workspace

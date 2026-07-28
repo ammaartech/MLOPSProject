@@ -1,0 +1,10 @@
+# Shell scripts must keep LF endings. A CRLF entrypoint.sh fails inside
+# the container with the notoriously unhelpful:
+#     exec /usr/local/bin/entrypoint.sh: no such file or directory
+# — the "missing file" is actually the \r glued onto the interpreter path.
+*.sh text eol=lf
+Dockerfile text eol=lf
+docker-compose.yml text eol=lf
+
+# The Windows launcher needs CRLF.
+*.bat text eol=crlf

@@ -36,6 +36,8 @@ MLflow 3.x notes
 """
 
 import json
+import os
+import sqlite3
 from datetime import datetime
 
 import config
@@ -43,17 +45,134 @@ from crud.query import execute_query
 
 EXPERIMENT = "predictive-resource-monitoring"
 
+# Artifacts live beside the backend database, addressed RELATIVE to the
+# working directory. See ensure_portable_artifact_root().
+ARTIFACT_ROOT = "mlruns"
+
+# The migration below is idempotent but involves opening the MLflow
+# backend directly, so it runs once per process rather than per call.
+_artifact_root_checked = False
+
 
 # ----------------------------------------------------------------------
 # MLflow plumbing
 # ----------------------------------------------------------------------
+def ensure_portable_artifact_root():
+    """Keep the experiment's artifact location valid on this platform.
+
+    MLflow resolves an experiment's `artifact_location` ONCE, when the
+    experiment is created, and stores it absolute. An experiment created
+    on Windows therefore holds `file:///C:/Users/.../mlruns/1`. Opening
+    the same backend database from inside a Linux container, MLflow reads
+    that string, treats it as a local path, and writes artifacts to
+    `/C:/Users/...` — inside the container's own writable layer, where
+    they vanish the moment it exits. Nothing errors; the metrics and
+    params land in the database and only the artifacts disappear, which
+    is the worst way for it to fail.
+
+    A RELATIVE location resolves against the working directory instead,
+    and every entry point on both platforms runs from the project root.
+    `mlruns/1` is therefore the project's own mlruns directory on Windows
+    and the bind-mounted `/app/mlruns` in the container — the same
+    physical folder, reached correctly from both.
+
+    There is no public API to change an existing experiment's artifact
+    location, so this edits the backend directly. It only rewrites a
+    location that is absolute AND absent on this host, so a database that
+    is already correct is left untouched.
+    """
+    global _artifact_root_checked
+    if _artifact_root_checked:
+        return
+    _artifact_root_checked = True
+
+    uri = config.MLFLOW_URI
+    if not uri.startswith("sqlite:///"):
+        return                       # a tracking server owns its own store
+    backend = uri[len("sqlite:///"):]
+    if not os.path.exists(backend):
+        return                       # nothing created yet; creation handles it
+
+    try:
+        connection = sqlite3.connect(backend)
+        cursor = connection.cursor()
+        cursor.execute(
+            "SELECT experiment_id, artifact_location FROM experiments"
+        )
+        for experiment_id, location in cursor.fetchall():
+            if not _is_unreachable(location):
+                continue
+            portable = f"{ARTIFACT_ROOT}/{experiment_id}"
+            cursor.execute(
+                "UPDATE experiments SET artifact_location = ? "
+                "WHERE experiment_id = ?",
+                (portable, experiment_id),
+            )
+            print(f"  [mlflow] experiment {experiment_id} artifact location "
+                  f"'{location}' is not reachable here; using '{portable}'")
+        connection.commit()
+        cursor.close()
+        connection.close()
+    except sqlite3.Error as exc:
+        # Tracking is observability, not the pipeline. A locked or
+        # unexpected backend must not take the training run down with it.
+        print(f"  [mlflow] could not check artifact location: {exc}")
+
+
+def _is_unreachable(location):
+    """True when `location` is an absolute path that does not exist here.
+
+    Recognises a Windows drive letter explicitly: `os.path.isabs("C:/x")`
+    is False on Linux, so a stored Windows path would otherwise look like
+    a harmless relative one and be left in place.
+    """
+    if not location:
+        return False
+    path = location[len("file:///"):] if location.startswith("file:///") \
+        else location
+    windows_absolute = len(path) > 1 and path[1] == ":"
+    if not os.path.isabs(path) and not windows_absolute:
+        return False                 # already relative, already portable
+    return not os.path.exists(path)
+
+
 def init_mlflow():
     """Point MLflow at the SQLite backend and select the experiment."""
     import mlflow
 
     mlflow.set_tracking_uri(config.MLFLOW_URI)
+    ensure_portable_artifact_root()
+
+    # Created here rather than by set_experiment, so a fresh database gets
+    # a relative artifact root from the start instead of an absolute one
+    # that ensure_portable_artifact_root has to repair the first time the
+    # project changes platform. The id is only known after creation, hence
+    # the second step: MLflow stores an explicit location verbatim, so
+    # passing bare "mlruns" would pile every experiment into one folder.
+    if mlflow.get_experiment_by_name(EXPERIMENT) is None:
+        experiment_id = mlflow.create_experiment(EXPERIMENT)
+        _force_relative_location(experiment_id)
+
     mlflow.set_experiment(EXPERIMENT)
     return mlflow
+
+
+def _force_relative_location(experiment_id):
+    """Rewrite one experiment's artifact location to a relative path."""
+    uri = config.MLFLOW_URI
+    if not uri.startswith("sqlite:///"):
+        return
+    try:
+        connection = sqlite3.connect(uri[len("sqlite:///"):])
+        connection.execute(
+            "UPDATE experiments SET artifact_location = ? "
+            "WHERE experiment_id = ?",
+            (f"{ARTIFACT_ROOT}/{experiment_id}", experiment_id),
+        )
+        connection.commit()
+        connection.close()
+    except sqlite3.Error as exc:
+        print(f"  [mlflow] could not set artifact location: {exc}")
 
 
 def log_training_run(result, register_model=True):

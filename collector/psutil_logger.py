@@ -1,3 +1,4 @@
+import os
 import time
 import psutil
 from datetime import datetime
@@ -5,12 +6,44 @@ from datetime import datetime
 import config
 from crud.metrics_crud import create_metric, count_metrics
 
+# Warned about once per process rather than once per sample; the collector
+# takes a reading every 3 seconds.
+_disk_path_warned = False
+
+
+def resolve_disk_path():
+    """The configured disk path, or this platform's root if it is absent.
+
+    `collector.disk_path` is seeded from os.path.abspath(os.sep), so a
+    database created on Windows stores "C:\\". The same database opened
+    inside a Linux container names a path that does not exist there, and
+    psutil.disk_usage raises on it.
+
+    The config table still owns the value — this only substitutes when the
+    stored path is missing on the machine actually taking the reading, and
+    it deliberately does NOT write the substitute back. The database is
+    shared with the Windows host, and correcting it for one platform would
+    break it for the other.
+    """
+    global _disk_path_warned
+
+    configured = config.get_str("collector.disk_path")
+    if os.path.exists(configured):
+        return configured
+
+    fallback = os.path.abspath(os.sep)
+    if not _disk_path_warned:
+        print(f"  [collector] configured disk path '{configured}' does not "
+              f"exist on this host; reading '{fallback}' instead")
+        _disk_path_warned = True
+    return fallback
+
 
 def collect_metrics():
     # interval=1 blocks ~1s and returns CPU % over that second (accurate)
     cpu = psutil.cpu_percent(interval=1)
     mem = psutil.virtual_memory()
-    disk = psutil.disk_usage(config.get_str("collector.disk_path"))
+    disk = psutil.disk_usage(resolve_disk_path())
 
     return {
         "ts": datetime.now().isoformat(timespec="seconds"),

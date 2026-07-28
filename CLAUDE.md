@@ -85,6 +85,10 @@ orchestration/
 
 dashboard/app.py            5 tabs, reads artifacts, EDITS config live
 main.py                     menu covering everything above
+
+Dockerfile                  two-stage build, python:3.12-slim
+docker/entrypoint.sh        the Linux counterpart of run.bat, same verbs
+docker-compose.yml          dashboard, mlflow, scheduler, collector, app
 ```
 
 ---
@@ -140,6 +144,23 @@ main.py                     menu covering everything above
 
 - **The load generator is required for a forecastable CPU signal.** An
   idle laptop is flat.
+
+- **Machine-specific config is resolved at read time, never written
+  back.** `collector.disk_path` seeds from `os.path.abspath(os.sep)`, so
+  a Windows-created database holds `C:\` and a Linux container cannot
+  stat it. `resolve_disk_path()` substitutes the platform root for that
+  reading only. `./data` is shared with the host, so "fixing" the stored
+  value for one platform breaks the other.
+
+- **MLflow artifact locations must stay relative.** MLflow resolves an
+  experiment's `artifact_location` once, at creation, and stores it
+  absolute. A Windows-created experiment read inside the container sent
+  artifacts to `/C:/Users/...` in the container's writable layer, where
+  they were discarded on exit — and nothing errored, because the metrics
+  and params still reached the database. `ensure_portable_artifact_root()`
+  rewrites an unreachable absolute location to `mlruns/<id>`, which
+  resolves against the working directory and is therefore the same folder
+  on both platforms.
 
 ---
 
@@ -269,4 +290,11 @@ correct behaviour, not a regression.
 ### Explicitly out of scope
 - Autonomous self-healing. Off-brief and unprovable at this n.
 - Bitbrains / Google Borg traces.
-- FastAPI / Docker / Kubernetes. Surface area, not evidence.
+- FastAPI / Kubernetes. Surface area, not evidence.
+
+Docker **was** on this list and is now built and published as
+`ammaartech/predictive-resource-monitor`. It earned its place by
+reproducing the host results exactly — same data and config
+fingerprints, same champions, same MAEs — which turns "it works on my
+laptop" into a checkable claim. It also surfaced two genuine portability
+bugs; see the non-negotiables above.

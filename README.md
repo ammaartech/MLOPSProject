@@ -37,6 +37,64 @@ Every module also runs on its own: `python -m pipeline.validate`,
 
 ---
 
+## Docker
+
+Published as
+[`ammaartech/predictive-resource-monitor`](https://hub.docker.com/r/ammaartech/predictive-resource-monitor)
+(`1.0.0`, `latest`). No Python, no venv, no dependency install:
+
+```powershell
+docker compose up dashboard mlflow        # both UIs: :8501 and :5000
+docker compose run --rm app pipeline      # all twelve stages, once
+docker compose run --rm app drift         # drift monitor + auto-retrain
+docker compose --profile live up          # the continuous scheduler
+docker compose run --rm app shell         # a prompt inside the image
+```
+
+`run.bat docker-*` wraps the same commands for anyone who would rather
+not remember compose syntax.
+
+The container reproduces the host numbers exactly — same data
+fingerprint `b5c281fb87b1`, same config fingerprint `e7ae4c10e9c4`, same
+champions at the same MAEs. That is the point of containerising it: the
+result is a property of the code and the data, not of one laptop.
+
+### What is shared, and what that costs
+
+`./data` and `./mlruns` are bind-mounted, so `metrics.db`, the models and
+the MLflow store are the same files the Windows tooling uses. Runs from
+either side are visible to the other. Two consequences are worth knowing:
+
+**`collector.disk_path` is machine-specific.** The config table seeds it
+from `os.path.abspath(os.sep)`, so a database created on Windows stores
+`C:\` — which does not exist in a Linux container.
+`collector.psutil_logger.resolve_disk_path()` substitutes the platform
+root at read time and deliberately does not write the substitute back;
+correcting the shared value for one platform would break the other.
+
+**MLflow artifact locations are resolved once, at experiment creation.**
+An experiment created on Windows stored
+`file:///C:/Users/.../mlruns/1`. Read from inside the container, MLflow
+treated that as a local path and wrote artifacts to `/C:/Users/...` in
+the container's own writable layer, where they vanished on exit —
+silently, because the metrics and params still landed in the database
+and only the artifacts disappeared.
+`tracking.mlflow_tracker.ensure_portable_artifact_root()` rewrites such a
+location to a relative `mlruns/<id>`, which resolves against the working
+directory and so means the same physical folder on both platforms. Runs
+logged before the migration keep their original absolute URIs.
+
+### The collector is the one thing Docker cannot help with
+
+`psutil` inside a Linux container reads `/proc`, which belongs to the
+container and the Docker Desktop VM — **not** to Windows. The
+`collector` service is there to demonstrate the path end to end; data you
+intend to model still has to be collected on the host with
+`run.bat collect`. This is a property of the platform, not a gap in the
+image: no Linux container can measure a Windows host's CPU.
+
+---
+
 ## The twelve stages
 
 | # | Stage | Module |

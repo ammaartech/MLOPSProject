@@ -1,0 +1,86 @@
+# ======================================================================
+#  Predictive Resource Monitoring System
+#
+#      docker compose up dashboard mlflow        the two UIs
+#      docker compose run --rm app pipeline      all twelve stages, once
+#      docker compose run --rm app drift         drift monitor + retrain
+#      docker compose --profile live up          continuous scheduler
+#
+#  Every service shares one bind-mounted ./data directory, which is where
+#  metrics.db, mlflow.db and the serialised models live. Bind-mounted
+#  rather than a named volume on purpose: the 777 collected samples and
+#  the promotion history are the evidence this project rests on, and they
+#  must stay visible to the Windows tooling (run.bat, the .venv) that also
+#  reads them.
+# ======================================================================
+
+x-common: &common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: ammaartech/predictive-resource-monitor:latest
+  volumes:
+    - ./data:/app/data
+    # MLflow's artifact root for a SQLite backend is ./mlruns relative to
+    # the working directory. Without this mount the run metadata persists
+    # and the logged model files silently do not.
+    - ./mlruns:/app/mlruns
+  environment:
+    RESOURCE_MONITOR_DATA: /app/data
+  # SQLite over a Windows bind mount goes through virtiofs, where WAL's
+  # shared-memory file is unreliable. connection.py sets busy_timeout, and
+  # this keeps a stalled writer from wedging a whole compose run.
+  stop_grace_period: 15s
+
+services:
+
+  # One-shot verbs: pipeline, drift, menu, backtest, shell.
+  # Started only via `docker compose run`, never by `up`.
+  app:
+    <<: *common
+    profiles: ["tools"]
+    stdin_open: true
+    tty: true
+
+  dashboard:
+    <<: *common
+    container_name: rms-dashboard
+    command: ["dashboard"]
+    ports:
+      - "8501:8501"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  mlflow:
+    <<: *common
+    container_name: rms-mlflow
+    command: ["mlflow"]
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+  # The continuous loop — the "continuously analyses" clause of the brief.
+  # --with-collector is deliberately omitted: see the note in collector.
+  scheduler:
+    <<: *common
+    container_name: rms-scheduler
+    profiles: ["live"]
+    command: ["schedule", "--drift-every", "10"]
+    restart: unless-stopped
+
+  # Samples THIS CONTAINER, not the Windows host. A Linux container cannot
+  # see Windows' CPU or memory — psutil reads /proc, which belongs to the
+  # Docker Desktop VM. Useful for demonstrating the collector end to end;
+  # for data you intend to model, run `run.bat collect` on the host.
+  collector:
+    <<: *common
+    container_name: rms-collector
+    profiles: ["live"]
+    command: ["collect"]
+    restart: unless-stopped

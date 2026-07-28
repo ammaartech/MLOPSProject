@@ -21,6 +21,14 @@ REM     run.bat menu            the Python menu in main.py
 REM     run.bat mlflow          MLflow tracking UI
 REM     run.bat reset-deps      force a clean dependency reinstall
 REM
+REM  Docker (no Python or venv needed — Docker Desktop must be running):
+REM     run.bat docker-build    build the image
+REM     run.bat docker-up       dashboard + MLflow UI, detached
+REM     run.bat docker-down     stop them
+REM     run.bat docker-pipeline all twelve stages inside a container
+REM     run.bat docker-drift    drift monitor inside a container
+REM     run.bat docker-push     push to Docker Hub (login required)
+REM
 REM  Every Python entry point is invoked as a MODULE (-m, dotted, no .py).
 REM  Running `python model\forecast.py` breaks the package imports.
 REM ======================================================================
@@ -41,6 +49,81 @@ if /i "%ACTION%"=="reset-deps" (
     if exist "%DEPS_STAMP%" del /q "%DEPS_STAMP%"
     set "ACTION=setup"
 )
+
+REM ================================================================
+REM  DOCKER ACTIONS
+REM
+REM  Dispatched BEFORE the Python prerequisites below. The entire point
+REM  of the container is that it needs no interpreter, no venv and no
+REM  pip install on this machine — checking for them first would defeat
+REM  it on exactly the clean machine it is meant to serve.
+REM ================================================================
+set "IMAGE=ammaartech/predictive-resource-monitor"
+
+if /i "%ACTION%"=="docker-build"    goto :docker_check
+if /i "%ACTION%"=="docker-up"       goto :docker_check
+if /i "%ACTION%"=="docker-down"     goto :docker_check
+if /i "%ACTION%"=="docker-pipeline" goto :docker_check
+if /i "%ACTION%"=="docker-drift"    goto :docker_check
+if /i "%ACTION%"=="docker-push"     goto :docker_check
+goto :prereqs
+
+:docker_check
+docker version >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo   ERROR: cannot reach the Docker daemon.
+    echo   Start Docker Desktop and wait for the whale icon to stop animating.
+    exit /b 1
+)
+
+if /i "%ACTION%"=="docker-build"    goto :docker_build
+if /i "%ACTION%"=="docker-up"       goto :docker_up
+if /i "%ACTION%"=="docker-down"     goto :docker_down
+if /i "%ACTION%"=="docker-pipeline" goto :docker_pipeline
+if /i "%ACTION%"=="docker-drift"    goto :docker_drift
+if /i "%ACTION%"=="docker-push"     goto :docker_push
+
+:docker_build
+docker compose build
+goto :done
+
+:docker_up
+docker compose up -d dashboard mlflow
+if errorlevel 1 exit /b 1
+echo.
+echo   dashboard : http://localhost:8501
+echo   MLflow    : http://localhost:5000
+echo   stop with : run.bat docker-down
+goto :done
+
+:docker_down
+docker compose down
+goto :done
+
+:docker_pipeline
+docker compose run --rm app pipeline
+goto :done
+
+:docker_drift
+docker compose run --rm app drift
+goto :done
+
+:docker_push
+REM Tag the current build with a version as well as latest, so a pushed
+REM :latest can always be traced back to a specific immutable tag.
+if "%ARG2%"=="" set "ARG2=1.0.0"
+docker tag %IMAGE%:latest %IMAGE%:%ARG2%
+if errorlevel 1 (
+    echo   ERROR: no local image to tag. Run: run.bat docker-build
+    exit /b 1
+)
+docker push %IMAGE%:%ARG2%
+if errorlevel 1 exit /b 1
+docker push %IMAGE%:latest
+goto :done
+
+:prereqs
 
 REM ================================================================
 REM  PREREQUISITE 1 — Python interpreter
@@ -135,6 +218,7 @@ if /i "%ACTION%"=="menu-interactive" goto :interactive
 
 echo Unknown action "%ACTION%".
 echo Valid: setup ^| collect ^| load ^| pipeline ^| drift ^| schedule ^| dashboard ^| menu ^| mlflow ^| reset-deps
+echo Docker: docker-build ^| docker-up ^| docker-down ^| docker-pipeline ^| docker-drift ^| docker-push
 exit /b 1
 
 REM ----------------------------------------------------------------
