@@ -1,8 +1,0 @@
-                 baseline    mae   rmse                                                note
-              persistence 0.0000 0.0000                                next = current value
-         persistence_lag1 0.0000 0.0000 next = value BEFORE current (the previous baseline)
-                    drift 0.0000 0.0000                              current + recent slope
-             rolling_mean 0.0000 0.0000                           mean of the recent window
-                    ridge 0.0475 0.0592                        linear model, min-max scaled
-           seasonal_naive 0.8035 1.0189                                value 80 samples ago
-MODEL (gradient boosting) 0.8039 1.0217                                         25 features
