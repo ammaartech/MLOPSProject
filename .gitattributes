@@ -8,3 +8,11 @@ docker-compose.yml text eol=lf
 
 # The Windows launcher needs CRLF.
 *.bat text eol=crlf
+
+# dataset/metrics.db is committed, and this machine has core.autocrlf=true.
+# Git would almost certainly infer "binary" from the NUL at byte 15 of the
+# "SQLite format 3\0" header and leave it alone — but that is a heuristic,
+# and the failure mode is a database silently corrupted by \n -> \r\n on
+# checkout. State it instead. `binary` also means -diff, so log and status
+# stop trying to render an 8 MB blob as text.
+*.db binary

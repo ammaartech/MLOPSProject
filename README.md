@@ -61,9 +61,10 @@ result is a property of the code and the data, not of one laptop.
 
 ### What is shared, and what that costs
 
-`./data` and `./mlruns` are bind-mounted, so `metrics.db`, the models and
-the MLflow store are the same files the Windows tooling uses. Runs from
-either side are visible to the other. Two consequences are worth knowing:
+`./dataset`, `./data` and `./mlruns` are bind-mounted, so `metrics.db`,
+the models and the MLflow store are the same files the Windows tooling
+uses. Runs from either side are visible to the other — which is precisely
+why the fingerprints above match. Two consequences are worth knowing:
 
 **`collector.disk_path` is machine-specific.** The config table seeds it
 from `os.path.abspath(os.sep)`, so a database created on Windows stores
@@ -138,7 +139,15 @@ Every change is recorded in `config_history`, and the configuration is
 hashed into a fingerprint that is stored with each trained model. The one
 exception is the database path itself, which has to exist before the
 table can be read; it comes from `RESOURCE_MONITOR_DB` or defaults to
-`data/metrics.db`.
+`dataset/metrics.db`.
+
+`dataset/` is tracked in git and `data/` is not, which is a deliberate
+split rather than an oversight. `data/` holds output — the MLflow store,
+the serialised models, the CSV exports — and re-running the pipeline
+rebuilds all of it. `dataset/metrics.db` holds the collected samples, and
+no amount of re-running brings back a measurement that was never taken.
+Evidence is versioned; output is regenerated. A fresh clone therefore
+arrives with the measurements already in it.
 
 The dashboard's **Lineage & Config** tab edits these values live.
 

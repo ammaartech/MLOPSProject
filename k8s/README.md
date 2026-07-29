@@ -57,10 +57,16 @@ run.bat k8s-seed dev          # copy THIS machine's database in, once
 run.bat k8s-pipeline dev      # compute artifacts in place, from its own data
 ```
 
-Seeding is a snapshot restore: each namespace gets its **own copy** on its
-**own volume**, and from that moment they diverge independently. It is how
-a staging environment is normally refreshed from production, and it does
-not weaken the isolation below.
+Seeding is a snapshot restore: it copies `dataset/metrics.db` — the
+repository's tracked, collected database — into the namespace, where each
+gets its **own copy** on its **own volume**, and from that moment they
+diverge independently. It is how a staging environment is normally
+refreshed from production, and it does not weaken the isolation below.
+
+Note the pods never read `dataset/` directly. The deployment sets
+`RESOURCE_MONITOR_DB_DIR=/app/data`, so every environment's live database
+is on its own claim; the tracked file is a seed, not a shared mount.
+Docker Compose deliberately does the opposite — see the root README.
 
 ---
 

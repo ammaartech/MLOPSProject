@@ -25,6 +25,14 @@ Two things cannot come from the database, because they are needed to open
 it: the database path and the directories around it. They are resolved
 from the environment, falling back to a path next to this file. That is
 the only hardcoded configuration in the project, and it is deliberate.
+
+Why the database sits in `dataset/` and not `data/`
+---------------------------------------------------
+`data/` is regenerable output — mlflow.db, the serialised models, the CSV
+exports — and it is gitignored. `metrics.db` is not regenerable: it is the
+collected evidence, and re-running the pipeline cannot bring back samples
+that were never taken. It therefore lives in its own tracked directory and
+is committed like source.
 """
 
 import os
@@ -35,13 +43,16 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 DATA_DIR = os.environ.get("RESOURCE_MONITOR_DATA", os.path.join(BASE_DIR, "data"))
-DB_PATH = os.environ.get("RESOURCE_MONITOR_DB", os.path.join(DATA_DIR, "metrics.db"))
+DB_DIR = os.environ.get("RESOURCE_MONITOR_DB_DIR", os.path.join(BASE_DIR, "dataset"))
+DB_PATH = os.environ.get("RESOURCE_MONITOR_DB", os.path.join(DB_DIR, "metrics.db"))
 MODEL_DIR = os.environ.get("RESOURCE_MONITOR_MODELS", os.path.join(DATA_DIR, "models"))
 MLFLOW_URI = os.environ.get(
     "RESOURCE_MONITOR_MLFLOW", "sqlite:///" + os.path.join(DATA_DIR, "mlflow.db")
 )
 
-for _d in (DATA_DIR, MODEL_DIR):
+# DB_PATH may be overridden to somewhere outside DB_DIR — k8s points it at
+# a per-namespace volume — so create the directory it actually names.
+for _d in (DATA_DIR, MODEL_DIR, os.path.dirname(os.path.abspath(DB_PATH))):
     os.makedirs(_d, exist_ok=True)
 
 

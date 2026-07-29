@@ -25,6 +25,12 @@ __pycache__/
 data/
 mlruns/
 
+# The collected metrics. Tracked in git (unlike data/), but excluded here
+# for exactly the reason above: baking it in would pin every pull to the
+# measurements taken on build day, and compose bind-mounts ./dataset over
+# this path anyway. The image ships the code; the volume brings the data.
+dataset/
+
 # Generated documentation and analysis output.
 graphify-out/
 

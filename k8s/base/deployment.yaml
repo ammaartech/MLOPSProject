@@ -79,6 +79,13 @@ spec:
           env:
             - name: RESOURCE_MONITOR_DATA
               value: /app/data
+            # Deliberately NOT the repository's tracked dataset/ directory.
+            # Each namespace owns its own database on its own claim, which
+            # is what makes the three environments genuinely separate; a
+            # shared read of the committed file would undo that. run.bat
+            # k8s-seed copies dataset/metrics.db in as a starting point.
+            - name: RESOURCE_MONITOR_DB_DIR
+              value: /app/data
             # Surfaced only so `kubectl describe` states plainly which
             # environment a pod belongs to. Nothing reads it — every real
             # setting lives in the config table of that environment's own

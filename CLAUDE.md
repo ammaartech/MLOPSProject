@@ -89,6 +89,9 @@ main.py                     menu covering everything above
 Dockerfile                  two-stage build, python:3.12-slim
 docker/entrypoint.sh        the Linux counterpart of run.bat, same verbs
 docker-compose.yml          dashboard, mlflow, scheduler, collector, app
+
+dataset/metrics.db          THE COLLECTED EVIDENCE — tracked in git
+data/                       regenerable output — gitignored
 ```
 
 ---
@@ -97,10 +100,28 @@ docker-compose.yml          dashboard, mlflow, scheduler, collector, app
 
 - **Nothing is hardcoded.** Every price, threshold, lag, SLA target and
   hyperparameter is a row in `config`. `config.py` reads; it does not
-  define. The sole exception is `DB_PATH` (env `RESOURCE_MONITOR_DB`),
-  which must exist before the table can be read. New settings go in
+  define. The sole exception is `DB_PATH` (env `RESOURCE_MONITOR_DB`,
+  or `RESOURCE_MONITOR_DB_DIR` for the directory), which must exist
+  before the table can be read. New settings go in
   `DEFAULT_CONFIG` in `database/schema.py`, which seeds with
   `INSERT OR IGNORE` and never overwrites a live value.
+
+- **`dataset/` is tracked; `data/` is not.** The split is evidence vs
+  output. `data/` holds what the pipeline rebuilds — mlflow.db, the
+  serialised models, the CSV exports — and is gitignored.
+  `dataset/metrics.db` holds the collected samples, which no re-run can
+  reproduce, so it is committed like source. Only the SQLite sidecars
+  (`-wal`, `-shm`) are ignored inside it; committing live journal state
+  lets a checkout replay another machine's pages over the database.
+  Checkpoint with `PRAGMA wal_checkpoint(TRUNCATE)` before committing a
+  database that a process had open.
+
+- **k8s does not read `dataset/`.** Each namespace owns its own database
+  on its own PVC — that is what makes the three environments isolated
+  rather than cosmetic — so the deployment sets
+  `RESOURCE_MONITOR_DB_DIR=/app/data`. Compose does the opposite and
+  mounts the tracked `./dataset`, because the container-reproduces-the-
+  host claim requires both sides to open the same file.
 
 - **Segment boundaries are hard walls.** Every lag, rolling window and
   diff runs inside `groupby("segment_id")`. The data has three collection

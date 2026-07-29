@@ -83,8 +83,10 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 COPY . .
 
 # Created before the volume is attached so the directory exists and is
-# owned correctly even when nothing is mounted over it.
-RUN mkdir -p /app/data /app/data/models /app/mlruns
+# owned correctly even when nothing is mounted over it. /app/dataset is
+# where config.py expects metrics.db; compose mounts the host's tracked
+# copy over it.
+RUN mkdir -p /app/data /app/data/models /app/dataset /app/mlruns
 
 EXPOSE 8501 5000
 

@@ -6,12 +6,17 @@
 #      docker compose run --rm app drift         drift monitor + retrain
 #      docker compose --profile live up          continuous scheduler
 #
-#  Every service shares one bind-mounted ./data directory, which is where
-#  metrics.db, mlflow.db and the serialised models live. Bind-mounted
-#  rather than a named volume on purpose: the 777 collected samples and
-#  the promotion history are the evidence this project rests on, and they
-#  must stay visible to the Windows tooling (run.bat, the .venv) that also
-#  reads them.
+#  Every service shares two bind-mounted directories: ./dataset, holding
+#  the collected metrics.db, and ./data, holding mlflow.db and the
+#  serialised models. Bind-mounted rather than named volumes on purpose:
+#  the collected samples and the promotion history are the evidence this
+#  project rests on, and they must stay visible to the Windows tooling
+#  (run.bat, the .venv) that also reads them.
+#
+#  Because both sides open the SAME metrics.db, a container run and a host
+#  run produce identical data and config fingerprints. That is what makes
+#  "Docker reproduces the host results exactly" a checkable claim rather
+#  than a hopeful one, so do not replace these with named volumes.
 # ======================================================================
 
 x-common: &common
@@ -21,12 +26,21 @@ x-common: &common
   image: ammaartech/predictive-resource-monitor:latest
   volumes:
     - ./data:/app/data
+    # The collected metrics. Excluded from the image by .dockerignore, so
+    # without this mount the container starts on an empty database and
+    # every result differs from the host's.
+    - ./dataset:/app/dataset
     # MLflow's artifact root for a SQLite backend is ./mlruns relative to
     # the working directory. Without this mount the run metadata persists
     # and the logged model files silently do not.
     - ./mlruns:/app/mlruns
   environment:
     RESOURCE_MONITOR_DATA: /app/data
+    # Redundant with config.py's default (BASE_DIR is /app), and stated
+    # anyway: the fingerprint parity above depends on this path matching
+    # the mount, and an accidental divergence fails silently by creating
+    # a second, empty database.
+    RESOURCE_MONITOR_DB_DIR: /app/dataset
   # SQLite over a Windows bind mount goes through virtiofs, where WAL's
   # shared-memory file is unreliable. connection.py sets busy_timeout, and
   # this keeps a stalled writer from wedging a whole compose run.

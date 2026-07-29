@@ -16,6 +16,10 @@ ACTION="${1:-dashboard}"
 shift || true
 
 DATA_DIR="${RESOURCE_MONITOR_DATA:-/app/data}"
+# metrics.db lives apart from the regenerable output: compose mounts the
+# repository's tracked ./dataset here, k8s points it at the namespace's
+# own volume instead. See config.py.
+DB_DIR="${RESOURCE_MONITOR_DB_DIR:-/app/dataset}"
 
 # ----------------------------------------------------------------------
 #  Database: create tables, seed defaults, apply column migrations.
@@ -28,7 +32,7 @@ DATA_DIR="${RESOURCE_MONITOR_DATA:-/app/data}"
 #  the platform root at read time instead.
 # ----------------------------------------------------------------------
 init_database() {
-    mkdir -p "$DATA_DIR" "$DATA_DIR/models"
+    mkdir -p "$DATA_DIR" "$DATA_DIR/models" "$DB_DIR"
     python - <<'PY'
 import sys
 
@@ -47,6 +51,7 @@ PY
 echo ""
 echo "[entrypoint] action: ${ACTION}"
 echo "[entrypoint] data  : ${DATA_DIR}"
+echo "[entrypoint] db    : ${DB_DIR}"
 echo "[entrypoint] initialising database..."
 init_database
 echo ""

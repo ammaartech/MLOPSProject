@@ -448,8 +448,8 @@ set "ENVNAME=%~1"
 set "NS=rms-%ENVNAME%"
 set "POD="
 
-if not exist "data\metrics.db" (
-    echo   ERROR: data\metrics.db not found. Collect on this machine first:
+if not exist "dataset\metrics.db" (
+    echo   ERROR: dataset\metrics.db not found. Collect on this machine first:
     echo       run.bat collect
     endlocal & exit /b 1
 )
@@ -463,10 +463,10 @@ if not defined POD (
     endlocal & exit /b 1
 )
 
-echo [k8s] seeding %NS% from data\metrics.db ...
+echo [k8s] seeding %NS% from dataset\metrics.db ...
 REM Land it under a temporary name. The running dashboard holds the live
 REM database open, and writing straight over it would be read half-copied.
-kubectl cp "data\metrics.db" "%NS%/%POD%:/app/data/seed.db"
+kubectl cp "dataset\metrics.db" "%NS%/%POD%:/app/data/seed.db"
 if errorlevel 1 (
     endlocal & exit /b 1
 )
