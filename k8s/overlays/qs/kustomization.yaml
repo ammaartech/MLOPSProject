@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: rms-qs
+
+resources:
+  - namespace.yaml
+  - ../../base
+
+# QS holds the promotion CANDIDATE. Its tag is mutable like dev's, but
+# it is written by promoting the dev image rather than by building from
+# the working tree — `run.bat k8s-build qs` retags, it does not compile.
+# So what qs tests is the exact image dev produced, which is the only
+# way a pass here is evidence about anything.
+images:
+  - name: ammaartech/predictive-resource-monitor
+    newTag: "qs"
+
+# Two pods, so a rollout can be observed without a full outage — sized
+# like production for the same reason its resource block is.
+replicas:
+  - name: dashboard
+    count: 2
+
+labels:
+  - pairs:
+      environment: qs
+    includeSelectors: false
+
+patches:
+  - path: patch-service.yaml
+  - path: patch-deployment.yaml

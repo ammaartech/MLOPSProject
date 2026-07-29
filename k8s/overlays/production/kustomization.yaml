@@ -1,0 +1,42 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: rms-production
+
+resources:
+  - namespace.yaml
+  - ../../base
+
+# Production runs an IMMUTABLE release tag, and that is what keeps the
+# three environments independent at the code level.
+#
+# Every overlay used to name :1.1.0. Docker Desktop's Kubernetes shares
+# an image store with the Docker engine and the pull policy is
+# IfNotPresent, so `docker build -t …:1.1.0 .` to try something in dev
+# silently rewrote the image production would start from — the change
+# landed the next time any pod anywhere restarted, with no deploy and no
+# trace. Distinct tags make that impossible: rebuilding :dev cannot
+# reach a namespace that only ever asks for :1.1.0.
+#
+# Bump this deliberately, to a version that has been through qs.
+images:
+  - name: ammaartech/predictive-resource-monitor
+    newTag: "1.1.0"
+
+# Three readers. maxSurge is 0, so a rollout replaces them one at a time
+# and two stay up throughout.
+replicas:
+  - name: dashboard
+    count: 3
+
+labels:
+  - pairs:
+      environment: production
+    # The selector is deliberately left alone. Adding a label to a
+    # Deployment's matchLabels after it exists is rejected as an immutable
+    # field change, so environment lives on the objects, not the selector.
+    includeSelectors: false
+
+patches:
+  - path: patch-service.yaml
+  - path: patch-deployment.yaml

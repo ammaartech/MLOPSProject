@@ -1,0 +1,20 @@
+# One claim per namespace, so each environment owns its own metrics.db,
+# its own models and — because config is a table in that database — its
+# own configuration. Editing headroom in dev cannot move production's
+# cost figures, which is exactly the separation an environment is for.
+#
+# No storageClassName: Docker Desktop provisions from its default
+# (hostpath). Naming a class here would make the manifests refuse to
+# apply on any cluster that spells it differently.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rms-data
+  labels:
+    app: rms
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi

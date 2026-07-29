@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard
+spec:
+  ports:
+    # Merged by the `port` key, so all four fields are restated.
+    - name: http
+      port: 8501
+      targetPort: http
+      nodePort: 30080

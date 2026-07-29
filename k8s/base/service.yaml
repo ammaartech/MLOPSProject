@@ -1,0 +1,44 @@
+# NodePort rather than ClusterIP: the whole point of three environments
+# here is reaching all three from the browser at once. Each overlay pins
+# its own nodePort, which is what puts production, dev and qs on separate
+# ports of localhost.
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard
+  labels:
+    app: rms
+    component: dashboard
+spec:
+  type: NodePort
+  # REQUIRED once replicas > 1. Streamlit is not stateless: the browser
+  # loads the page over HTTP, then upgrades to a websocket that carries
+  # the whole session, and the server keeps that session in the memory of
+  # one specific pod. Round-robin sends the upgrade to a different pod
+  # than served the page, which the client meets as a permanent
+  # "Connecting..." or a view that resets on every interaction.
+  #
+  # This also fixes a second, quieter problem. config.py memoises every
+  # value it reads in a per-PROCESS dict, invalidated only by the process
+  # that wrote it — so a config edit applied on one pod leaves the others
+  # serving the old value with no TTL to save them. Affinity means the
+  # person who made the edit keeps talking to the pod that made it, and
+  # so sees a consistent system. The remaining pods converge on restart;
+  # if that ever needs to be immediate, config belongs in Postgres.
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      # Comfortably longer than a demo, so a pause does not resettle a
+      # live session onto a different pod mid-conversation.
+      timeoutSeconds: 10800
+  selector:
+    app: rms
+    component: dashboard
+  ports:
+    - name: http
+      port: 8501
+      targetPort: http
+      # Placeholder. Every overlay replaces this; two Services may not
+      # claim the same nodePort, so leaving it unset per environment
+      # would let Kubernetes assign a random one and defeat the purpose.
+      nodePort: 30080

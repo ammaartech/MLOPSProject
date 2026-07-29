@@ -1,0 +1,23 @@
+# Production gets the largest budget of the three. These numbers are the
+# same kind of decision service/recommender.py makes every cycle — the
+# smallest allocation that still holds the SLA — expressed in the field
+# Kubernetes actually reads.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard
+spec:
+  template:
+    spec:
+      containers:
+        - name: dashboard
+          env:
+            - name: RMS_ENVIRONMENT
+              value: production
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "3Gi"

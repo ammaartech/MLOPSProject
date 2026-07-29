@@ -1,0 +1,21 @@
+# Dev runs lean. It exists to try config changes and broken branches, not
+# to serve anything, so it gets the smallest reservation of the three.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard
+spec:
+  template:
+    spec:
+      containers:
+        - name: dashboard
+          env:
+            - name: RMS_ENVIRONMENT
+              value: dev
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"

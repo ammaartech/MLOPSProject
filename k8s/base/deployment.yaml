@@ -1,0 +1,121 @@
+# The dashboard. Each overlay sets its own replica count.
+#
+# Replicas are READERS. ReadWriteOnce means one NODE, not one pod, so
+# several pods on the same node may mount this claim — which is what
+# makes a replica count above 1 legal here. What it does NOT make legal
+# is several pods WRITING: the only writer in this image is the pipeline
+# (`args: ["pipeline"]`), which is run as a one-shot Job, never as part
+# of this Deployment. The dashboard writes exactly one thing, a config
+# edit, and SQLite serialises that through WAL plus busy_timeout=5000
+# (see database/connection.py).
+#
+# The co-location rule below is what keeps the ReadWriteOnce promise
+# true. Scaling PAST one node still needs Postgres, not a bigger number.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard
+  labels:
+    app: rms
+    component: dashboard
+spec:
+  # Overridden per environment: production 3, qs 2, dev 1.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rms
+      component: dashboard
+  strategy:
+    # maxSurge 0 is the load-bearing setting, not RollingUpdate itself.
+    # A surge pod is an EXTRA pod, and the scheduler is free to place an
+    # extra pod on another node — where the ReadWriteOnce claim is
+    # already attached, so it would block forever. Holding the surge at
+    # zero means a pod is always terminated before its replacement is
+    # created, so the pod count never exceeds `replicas` and no new node
+    # is ever required. With replicas > 1 that still leaves N-1 pods
+    # serving throughout, which Recreate (a full outage) did not.
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: rms
+        component: dashboard
+    spec:
+      affinity:
+        podAffinity:
+          # Keep replicas on one node, because they share one
+          # ReadWriteOnce claim. Deliberately `preferred` and not
+          # `required`: a required rule that selects the pod's own label
+          # has nothing to match when the first pod of a fresh namespace
+          # is scheduled, and risks wedging the very first rollout. On
+          # the single-node Docker Desktop cluster this is moot; on a
+          # real one it is the difference between replicas that schedule
+          # and replicas that sit Pending on a volume conflict.
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app: rms
+                    component: dashboard
+      containers:
+        - name: dashboard
+          image: ammaartech/predictive-resource-monitor:1.1.0
+          # Docker Desktop's Kubernetes shares an image store with the
+          # Docker engine, so a locally built image is found without ever
+          # contacting the registry. On any other cluster this falls back
+          # to pulling from Docker Hub.
+          imagePullPolicy: IfNotPresent
+          # Overrides the image's CMD. The entrypoint understands the same
+          # verbs as run.bat: dashboard, pipeline, drift, schedule, mlflow.
+          args: ["dashboard"]
+          ports:
+            - name: http
+              containerPort: 8501
+          env:
+            - name: RESOURCE_MONITOR_DATA
+              value: /app/data
+            # Surfaced only so `kubectl describe` states plainly which
+            # environment a pod belongs to. Nothing reads it — every real
+            # setting lives in the config table of that environment's own
+            # database, which is what makes the three genuinely separate.
+            - name: RMS_ENVIRONMENT
+              value: base
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          # requests are what the scheduler reserves; limits are the cap.
+          # This is the same decision service/recommender.py computes —
+          # the overlays set different values per environment to make the
+          # point concrete.
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+          readinessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: http
+            # Generous: the entrypoint initialises the database before
+            # Streamlit binds, and a cold PVC makes that slower than the
+            # readiness delay above suggests.
+            initialDelaySeconds: 60
+            periodSeconds: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: rms-data

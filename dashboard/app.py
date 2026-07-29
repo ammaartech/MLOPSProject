@@ -121,6 +121,35 @@ def targets():
 # ----------------------------------------------------------------------
 st.sidebar.title("Predictive Resource Monitor")
 
+# ----------------------------------------------------------------------
+# Which environment am I looking at?
+#
+# The Kubernetes overlays serve three identical-looking dashboards on
+# three ports, from three separate databases. With nothing on screen to
+# tell them apart, "did that config edit reach production?" can only be
+# answered from a terminal — so the isolation the namespaces provide is
+# real but unverifiable, which is nearly as bad as not having it.
+#
+# RMS_ENVIRONMENT is set by each overlay and by nothing else: when it is
+# absent this is a local `streamlit run`, and saying so is the point.
+# HOSTNAME is the pod, which with replicas > 1 is the only way to see
+# which one answered — and therefore that session affinity is holding.
+# Both are display-only. Every value that changes behaviour still comes
+# from the config table of the database this pod is attached to.
+# ----------------------------------------------------------------------
+_environment = os.environ.get("RMS_ENVIRONMENT")
+if _environment:
+    _colour = {"production": "red", "qs": "orange", "dev": "blue"}
+    st.sidebar.markdown(
+        f":{_colour.get(_environment, 'grey')}-background"
+        f"[**{_environment.upper()}**]"
+    )
+    _pod = os.environ.get("HOSTNAME")
+    if _pod:
+        st.sidebar.caption(f"pod `{_pod}`")
+else:
+    st.sidebar.caption("environment **local**")
+
 run = latest_run()
 if run is None:
     st.error("No successful ETL run. Run `python -m orchestration.run_pipeline` first.")
@@ -134,6 +163,12 @@ st.sidebar.caption(f"gate **{run['gate_verdict']}**")
 window = st.sidebar.slider("Chart window (samples)", 50, 800, 300, step=50)
 if st.sidebar.button("Refresh data"):
     st.cache_data.clear()
+    # st.cache_data holds query RESULTS. config.py keeps config VALUES in
+    # a separate per-process dict that has no TTL and is invalidated only
+    # by the process that wrote them. Clearing just the first leaves a
+    # setting changed by a pipeline run — or by another replica — unseen
+    # here for as long as this pod lives.
+    config.invalidate()
     st.rerun()
 
 frame = clean_frame(run["run_id"])

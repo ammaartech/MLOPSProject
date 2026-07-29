@@ -1,0 +1,11 @@
+# Shared definition of one environment. Never applied directly — apply an
+# overlay, which sets the namespace, the nodePort and the resource budget:
+#
+#     kubectl apply -k k8s/overlays/production
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml

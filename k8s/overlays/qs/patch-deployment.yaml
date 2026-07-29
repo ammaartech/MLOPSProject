@@ -1,0 +1,22 @@
+# QS sits between the two: sized like production so that what passes here
+# is evidence about production, but isolated so a bad promotion cannot
+# reach it. A QS box sized like dev tells you nothing about production.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard
+spec:
+  template:
+    spec:
+      containers:
+        - name: dashboard
+          env:
+            - name: RMS_ENVIRONMENT
+              value: qs
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "3Gi"
