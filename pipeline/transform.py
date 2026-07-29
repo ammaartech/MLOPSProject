@@ -129,9 +129,8 @@ def label_regimes(df, column="cpu_percent"):
 def normalise_units(df):
     """Make units explicit and consistent.
 
-    `mem_used_mb` alongside `disk_used_gb` is the kind of mismatch that
-    produces a cost figure wrong by 1024x. Both are expressed in GB here,
-    with the original column retained.
+    `mem_used_mb` is converted to GB for consistency. Disk metrics are
+    already in MB/s (read/write throughput) and need no conversion.
     """
     out = df.copy()
     added = []

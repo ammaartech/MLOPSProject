@@ -18,7 +18,7 @@ Two rules that the rest of the project depends on:
    they find there.
 """
 
-import os
+
 
 # ----------------------------------------------------------------------
 # Tables
@@ -39,8 +39,8 @@ TABLES = {
             cpu_percent   REAL,
             mem_percent   REAL,
             mem_used_mb   REAL,
-            disk_percent  REAL,
-            disk_used_gb  REAL
+            disk_read_mb_s   REAL,
+            disk_write_mb_s  REAL
         )
     """,
 
@@ -108,8 +108,8 @@ TABLES = {
             cpu_percent   REAL,
             mem_percent   REAL,
             mem_used_mb   REAL,
-            disk_percent  REAL,
-            disk_used_gb  REAL,
+            disk_read_mb_s   REAL,
+            disk_write_mb_s  REAL,
             regime        TEXT,
             is_imputed    INTEGER NOT NULL DEFAULT 0,
             is_outlier    INTEGER NOT NULL DEFAULT 0,
@@ -384,8 +384,6 @@ DEFAULT_CONFIG = [
     # ---- collector -----------------------------------------------------
     ("collector.sample_interval_sec", "3", "int", "collector",
      "Seconds between samples taken by the psutil logger"),
-    ("collector.disk_path", os.path.abspath(os.sep), "str", "collector",
-     "Filesystem root measured for disk utilisation"),
 
     # ---- pipeline: source selection and cleaning -----------------------
     ("pipeline.default_source", "sqlite://", "str", "pipeline",
@@ -428,7 +426,7 @@ DEFAULT_CONFIG = [
      "CPU utilisation bands used to label operating regime"),
 
     # ---- stage 7: feature engineering ----------------------------------
-    ("features.targets", '["cpu_percent", "mem_percent", "disk_percent"]',
+    ("features.targets", '["cpu_percent", "mem_percent", "disk_read_mb_s"]',
      "json", "features", "Columns the system forecasts"),
     ("features.lags", "[0, 1, 3, 5, 10, 20]", "json", "features",
      "Lag depths in samples. Lag 0 is the CURRENT value — without it the "
@@ -615,8 +613,8 @@ SCHEMA_CONTRACT_ROWS = [
      "Memory utilisation percentage"),
     ("metrics", "mem_used_mb", "float", 1, 0.0, None, 0,
      "Memory used in megabytes"),
-    ("metrics", "disk_percent", "float", 1, 0.0, 100.0, 1,
-     "Disk utilisation percentage"),
-    ("metrics", "disk_used_gb", "float", 1, 0.0, None, 0,
-     "Disk used in gigabytes"),
+    ("metrics", "disk_read_mb_s", "float", 1, 0.0, None, 0,
+     "Disk read throughput in MB/s"),
+    ("metrics", "disk_write_mb_s", "float", 1, 0.0, None, 0,
+     "Disk write throughput in MB/s"),
 ]

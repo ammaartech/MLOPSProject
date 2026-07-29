@@ -123,7 +123,7 @@ def run_history(limit=20):
 def load_clean(run_id, df):
     """Write the cleaned series to `metrics_clean` for this run."""
     columns = ["cpu_percent", "mem_percent", "mem_used_mb",
-               "disk_percent", "disk_used_gb"]
+               "disk_read_mb_s", "disk_write_mb_s"]
     rows = [
         (
             run_id,
@@ -141,7 +141,7 @@ def load_clean(run_id, df):
         """
         INSERT OR REPLACE INTO metrics_clean
             (run_id, ts, segment_id, cpu_percent, mem_percent, mem_used_mb,
-             disk_percent, disk_used_gb, regime, is_imputed, is_outlier)
+             disk_read_mb_s, disk_write_mb_s, regime, is_imputed, is_outlier)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         rows,
@@ -214,7 +214,7 @@ def read_clean(run_id=None):
     rows = execute_query(
         """
         SELECT ts, segment_id, cpu_percent, mem_percent, mem_used_mb,
-               disk_percent, disk_used_gb, regime, is_imputed, is_outlier
+               disk_read_mb_s, disk_write_mb_s, regime, is_imputed, is_outlier
         FROM metrics_clean WHERE run_id = ? ORDER BY ts ASC
         """,
         (run_id,), fetch=True,
@@ -222,7 +222,7 @@ def read_clean(run_id=None):
 
     df = pd.DataFrame(rows, columns=[
         "ts", "segment_id", "cpu_percent", "mem_percent", "mem_used_mb",
-        "disk_percent", "disk_used_gb", "regime", "is_imputed", "is_outlier",
+        "disk_read_mb_s", "disk_write_mb_s", "regime", "is_imputed", "is_outlier",
     ])
     if not df.empty:
         df["ts"] = pd.to_datetime(df["ts"])

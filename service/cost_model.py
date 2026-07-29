@@ -30,7 +30,7 @@ def resource_map():
     return {
         "cpu_percent": ("vCPUs", config.get_int("node.vcpus"), "cost.vcpu_hour"),
         "mem_percent": ("GB RAM", config.get_int("node.ram_gb"), "cost.gb_ram_hour"),
-        "disk_percent": ("GB storage", config.get_int("node.storage_gb"),
+        "disk_read_mb_s": ("MB/s I/O", config.get_int("node.storage_gb"),
                          "cost.gb_storage_month"),
     }
 
@@ -53,8 +53,8 @@ def ram_gb_for_percent(mem_percent):
     return units_for_percent("mem_percent", mem_percent)
 
 
-def storage_gb_for_percent(disk_percent):
-    return units_for_percent("disk_percent", disk_percent)
+def io_throughput_for_percent(disk_read_mb_s):
+    return units_for_percent("disk_read_mb_s", disk_read_mb_s)
 
 
 # ----------------------------------------------------------------------
@@ -82,16 +82,16 @@ def resource_monthly_cost(target, percent):
     rate = config.get_float(cost_key)
 
     # Storage is priced per GB-month; compute and memory per unit-hour.
-    if target == "disk_percent":
+    if target == "disk_read_mb_s":
         return round(units * rate, 2)
     return round(units * rate * config.get_int("cost.hours_per_month"), 2)
 
 
-def cost_from_percentages(cpu_percent, mem_percent, disk_percent):
+def cost_from_percentages(cpu_percent, mem_percent, disk_read_mb_s):
     return monthly_cost(
         units_for_percent("cpu_percent", cpu_percent),
         units_for_percent("mem_percent", mem_percent),
-        units_for_percent("disk_percent", disk_percent),
+        units_for_percent("disk_read_mb_s", disk_read_mb_s),
     )
 
 
@@ -100,7 +100,7 @@ def cost_for_allocation(allocation):
     return monthly_cost(
         units_for_percent("cpu_percent", allocation.get("cpu_percent", 100.0)),
         units_for_percent("mem_percent", allocation.get("mem_percent", 100.0)),
-        units_for_percent("disk_percent", allocation.get("disk_percent", 100.0)),
+        units_for_percent("disk_read_mb_s", allocation.get("disk_read_mb_s", 100.0)),
     )
 
 
@@ -229,12 +229,12 @@ if __name__ == "__main__":
         print(f"  {key:9s} ${value}")
 
     print("\nPER-RESOURCE COST AT SEVERAL ALLOCATIONS")
-    print(f"  {'allocation':>10} {'cpu $':>10} {'memory $':>10} {'storage $':>10}")
+    print(f"  {'allocation':>10} {'cpu $':>10} {'memory $':>10} {'disk I/O $':>10}")
     for level in (50, 70, 85, 100):
         print(f"  {level:>9}% "
               f"{resource_monthly_cost('cpu_percent', level):>10} "
               f"{resource_monthly_cost('mem_percent', level):>10} "
-              f"{resource_monthly_cost('disk_percent', level):>10}")
+              f"{resource_monthly_cost('disk_read_mb_s', level):>10}")
 
     from model.features import load_clean_frame
 

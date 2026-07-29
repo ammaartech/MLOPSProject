@@ -21,7 +21,7 @@ Results are written to `quality_checks` against the run id, so data health
 is queryable over time rather than only visible in a console.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 
@@ -163,7 +163,10 @@ def run_gate(df):
         n_unsorted,
     ))
 
-    horizon = datetime.now() + timedelta(minutes=5)
+    if getattr(ts.dtype, "tz", None) is not None:
+        horizon = datetime.now(timezone.utc) + timedelta(minutes=5)
+    else:
+        horizon = datetime.now() + timedelta(minutes=5)
     n_future = int((ts > horizon).sum())
     checks.append(_check(
         "timestamp_not_future",

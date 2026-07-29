@@ -2,7 +2,7 @@ from crud.query import execute_query
 
 _EDITABLE = {
     "cpu_percent", "mem_percent", "mem_used_mb",
-    "disk_percent", "disk_used_gb",
+    "disk_read_mb_s", "disk_write_mb_s",
 }
 
 
@@ -10,7 +10,7 @@ _EDITABLE = {
 def create_metric(record):
     query = """
         INSERT INTO metrics
-        (ts, cpu_percent, mem_percent, mem_used_mb, disk_percent, disk_used_gb)
+        (ts, cpu_percent, mem_percent, mem_used_mb, disk_read_mb_s, disk_write_mb_s)
         VALUES (?, ?, ?, ?, ?, ?)
     """
     values = (
@@ -18,8 +18,8 @@ def create_metric(record):
         record["cpu_percent"],
         record["mem_percent"],
         record["mem_used_mb"],
-        record["disk_percent"],
-        record["disk_used_gb"],
+        record["disk_read_mb_s"],
+        record["disk_write_mb_s"],
     )
     return execute_query(query, values)
 

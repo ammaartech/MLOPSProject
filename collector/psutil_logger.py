@@ -1,57 +1,39 @@
-import os
 import time
 import psutil
-from datetime import datetime
+from datetime import datetime, timezone
 
 import config
 from crud.metrics_crud import create_metric, count_metrics
 
-# Warned about once per process rather than once per sample; the collector
-# takes a reading every 3 seconds.
-_disk_path_warned = False
-
-
-def resolve_disk_path():
-    """The configured disk path, or this platform's root if it is absent.
-
-    `collector.disk_path` is seeded from os.path.abspath(os.sep), so a
-    database created on Windows stores "C:\\". The same database opened
-    inside a Linux container names a path that does not exist there, and
-    psutil.disk_usage raises on it.
-
-    The config table still owns the value — this only substitutes when the
-    stored path is missing on the machine actually taking the reading, and
-    it deliberately does NOT write the substitute back. The database is
-    shared with the Windows host, and correcting it for one platform would
-    break it for the other.
-    """
-    global _disk_path_warned
-
-    configured = config.get_str("collector.disk_path")
-    if os.path.exists(configured):
-        return configured
-
-    fallback = os.path.abspath(os.sep)
-    if not _disk_path_warned:
-        print(f"  [collector] configured disk path '{configured}' does not "
-              f"exist on this host; reading '{fallback}' instead")
-        _disk_path_warned = True
-    return fallback
-
 
 def collect_metrics():
+    """Sample CPU, memory, and instantaneous disk I/O throughput.
+
+    Disk I/O is measured by snapshotting ``psutil.disk_io_counters()``
+    before and after the 1-second ``cpu_percent(interval=1)`` blocking
+    call, so read/write MB/s come for free without adding latency.
+    """
+    # Snapshot disk I/O counters BEFORE the 1-second CPU measurement
+    io_before = psutil.disk_io_counters()
+
     # interval=1 blocks ~1s and returns CPU % over that second (accurate)
     cpu = psutil.cpu_percent(interval=1)
+
+    # Snapshot disk I/O counters AFTER — the delta is the 1-second throughput
+    io_after = psutil.disk_io_counters()
+
     mem = psutil.virtual_memory()
-    disk = psutil.disk_usage(resolve_disk_path())
+
+    read_bytes = io_after.read_bytes - io_before.read_bytes
+    write_bytes = io_after.write_bytes - io_before.write_bytes
 
     return {
-        "ts": datetime.now().isoformat(timespec="seconds"),
+        "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "cpu_percent": cpu,
         "mem_percent": mem.percent,
         "mem_used_mb": round(mem.used / (1024 ** 2), 2),
-        "disk_percent": disk.percent,
-        "disk_used_gb": round(disk.used / (1024 ** 3), 2),
+        "disk_read_mb_s": round(read_bytes / (1024 ** 2), 2),
+        "disk_write_mb_s": round(write_bytes / (1024 ** 2), 2),
     }
 
 
@@ -63,7 +45,8 @@ def log_once(verbose=True):
             f"[{record['ts']}]  "
             f"CPU {record['cpu_percent']:5.1f}%  |  "
             f"MEM {record['mem_percent']:5.1f}%  |  "
-            f"DISK {record['disk_percent']:5.1f}%"
+            f"DISK R {record['disk_read_mb_s']:7.2f} MB/s  "
+            f"W {record['disk_write_mb_s']:7.2f} MB/s"
         )
     return record
 
