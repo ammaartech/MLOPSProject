@@ -1,11 +1,11 @@
 # Graph Report - MLOPSProject  (2026-07-31)
 
 ## Corpus Check
-- 61 files · ~56,731 words
+- 61 files · ~57,542 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 756 nodes · 1802 edges · 39 communities (24 shown, 15 thin omitted)
+- 757 nodes · 1804 edges · 60 communities (45 shown, 15 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 40 edges (avg confidence: 0.75)
 - Token cost: 0 input · 0 output
 
@@ -35,6 +35,11 @@
 - wave_pattern
 - entrypoint.sh
 - run.sh
+- get_json
+- config_crud.py
+- execute_query
+- run_twin.py
+- execute_many
 - features.lags Starts At 0
 - Regrid Buckets, It Does Not Match
 - Segment Boundaries Are Hard Walls
@@ -47,9 +52,25 @@
 - Chronological Split, Never Shuffle
 - Scalers Fit On Training Rows Only
 - Scaling Is Irrelevant To The Champion
+- forecast.py
+- predictor.py
+- run_logger
+- tuning.py
+- drift.py
+- auth.py
+- init_db
+- forecast_horizon
+- sources.py
+- Promotion Gate
+- fingerprint
+- log_once
+- get_online_features
+- evaluate
+- in_cooldown
+- retrain
 
 ## God Nodes (most connected - your core abstractions)
-1. `execute_query()` - 85 edges
+1. `execute_query()` - 86 edges
 2. `main()` - 47 edges
 3. `get_int()` - 40 edges
 4. `load_clean_frame()` - 38 edges
@@ -65,10 +86,10 @@
   database/schema.py → CLAUDE.md
 - `CSV Round Trip (export then replay via csv:// source)` --semantically_similar_to--> `Walk-Forward Backtest Replay`  [INFERRED] [semantically similar]
   conversion/csv_export.py → CLAUDE.md
-- `Quick Start / Run Commands` --references--> `run_logger()`  [EXTRACTED]
-  README.md → collector/psutil_logger.py
-- `apply_safety_floor()` --semantically_similar_to--> `check()`  [INFERRED] [semantically similar]
-  service/cost_model.py → serving/drift.py
+- `_forecast_from_history()` --semantically_similar_to--> `forecast_horizon()`  [INFERRED] [semantically similar]
+  evaluation/backtest.py → serving/predictor.py
+- `Promotion Gate` --references--> `schema.DEFAULT_CONFIG — seed defaults`  [INFERRED]
+  CLAUDE.md → database/schema.py
 - `Load Generator Required For A Forecastable Signal` --rationale_for--> `wave_pattern()`  [EXTRACTED]
   CLAUDE.md → collector/load_generator.py
 
@@ -86,75 +107,159 @@
 - **Predict -> log -> score -> drift -> retrain -> re-gate** — serving_predictor_predict, serving_predictor_log_prediction, serving_predictor_score, serving_predictor_predictions_table, serving_drift_check, serving_drift_retrain, tracking_mlflow_tracker_run_gate [EXTRACTED 1.00]
 - **Forecast -> P95 + headroom -> safety floor -> price -> replay to verify** — serving_predictor_forecast_horizon, service_recommender_recommend_percent, service_cost_model_apply_safety_floor, service_cost_model_resource_monthly_cost, evaluation_backtest_run, evaluation_backtest_combined [EXTRACTED 1.00]
 
-## Communities (39 total, 15 thin omitted)
+## Communities (60 total, 15 thin omitted)
 
 ### Community 0 - "get_int"
 Cohesion: 0.06
-Nodes (70): get_float(), get_int(), Cost & SLA tab, combined(), format_target(), _log(), policy_oracle(), policy_predictive() (+62 more)
+Nodes (71): get_float(), get_int(), Cost & SLA tab, combined(), _fit(), _forecast_from_history(), format_target(), _log() (+63 more)
 
 ### Community 1 - "main.py"
 Cohesion: 0.06
-Nodes (80): get_json(), Live config editor tab, Streamlit dashboard (5 tabs), Baseline ladder panel, _fit(), format_report(), Train on the data available at this point in the replay., run_all() (+72 more)
+Nodes (87): main(), Live config editor tab, Streamlit dashboard (5 tabs), Baseline ladder panel, format_report(), run_all(), Walk-forward replay, collector_menu() (+79 more)
 
 ### Community 2 - "baseline.py"
-Cohesion: 0.08
-Nodes (31): ladder(), drift(), Compare against the strongest baseline, not the handiest, mae(), naive_forecast(), persistence(), persistence_lag1(), Baseline ladder — what the model has to beat.  A single "naive" number is easy t (+23 more)
+Cohesion: 0.05
+Nodes (52): best_baseline(), drift(), Compare against the strongest baseline, not the handiest, mae(), naive_forecast(), persistence(), persistence_lag1(), Baseline ladder — what the model has to beat.  A single "naive" number is easy t (+44 more)
 
 ### Community 3 - "features.py"
-Cohesion: 0.05
-Nodes (64): _forecast_from_history(), The champion's view of the next `steps` samples, from history only.      With a, best_baseline(), The strongest rung — what a model must actually beat., rmse(), Online store (refresh_online / get_online_features), Stable short id for one (target, feature definition, data) triple., Training-serving skew prevention via version id (+56 more)
+Cohesion: 0.17
+Nodes (15): _add_calendar(), _add_encoded(), _add_interactions(), _add_lags(), _add_rolling(), build_feature_frame(), STAGE 7 — Feature Engineering: derived, aggregated, date and interaction feature, Clock features.      Kept ablatable. On an hour-long dataset driven by a periodi (+7 more)
 
 ### Community 4 - "sources.py"
-Cohesion: 0.07
-Nodes (24): pipeline_menu(), run_history(), CSVSource, describe_available(), export_csv(), get_source(), HTTPSource, Source as configuration, not code (+16 more)
+Cohesion: 0.06
+Nodes (34): Walk-Forward Backtest Replay, The Measured SLA-Compliant Saving Is 2.52%, Allocation Safety Floor, export_all(), export_clean(), export_features(), export_raw(), export_rollup() (+26 more)
 
 ### Community 5 - "config.py"
-Cohesion: 0.05
-Nodes (63): Full Prediction Lineage, Read interval at call time, not as a default argument, all_values(), config cache + invalidate(), _crud(), feature_fingerprint(), fingerprint(), get() (+55 more)
+Cohesion: 0.14
+Nodes (21): Read interval at call time, not as a default argument, all_values(), config cache + invalidate(), _crud(), feature_fingerprint(), fingerprint(), get(), get_category() (+13 more)
 
 ### Community 6 - "execute_query"
-Cohesion: 0.06
-Nodes (61): collect_metrics(), log_once(), Sample CPU, memory, and instantaneous disk I/O throughput.      Disk I/O is me, run_logger(), export_all(), export_clean(), export_features(), export_raw() (+53 more)
+Cohesion: 0.13
+Nodes (19): _clean(), get_historical_features(), get_manifest(), latest_version(), list_versions(), load_offline(), materialise(), get_historical_features (point-in-time join) (+11 more)
 
 ### Community 7 - "etl.py"
-Cohesion: 0.05
-Nodes (56): generate_cadence_drift(), generate_gap_injection(), generate_multi_host_shift(), generate_regime_change(), generate_sustained_spike(), main(), Vary sampling interval mid-run (e.g. 3s -> 5s -> 4s)., Same signal shape as regime_change but with a different baseline load (shifted b (+48 more)
+Cohesion: 0.13
+Nodes (22): execute_insert(), Insert one row and return its new primary key.      `last_insert_rowid()` is sco, Regrid buckets rather than reindex-matching, _bulk_insert(), data_fingerprint(), A failed run still leaves a record, finish_run(), load_clean() (+14 more)
 
 ### Community 8 - "clean.py"
-Cohesion: 0.13
-Nodes (19): _gap_blind_row_count (contamination measure), Regrid buckets rather than reindex-matching, clean(), clip_ranges(), deduplicate(), Flag outliers, do not delete them, Hampel outlier flagging (median + MAD), impute() (+11 more)
+Cohesion: 0.14
+Nodes (18): _gap_blind_row_count (contamination measure), clean(), clip_ranges(), deduplicate(), Flag outliers, do not delete them, Hampel outlier flagging (median + MAD), impute(), normalise() (+10 more)
 
 ### Community 9 - "drift.py"
-Cohesion: 0.05
-Nodes (51): categorical_drift(), check(), events(), feature_drift(), in_cooldown(), psi(), Drift detection and automatic retraining.  This is the "continuously analyses" c, PSI between the earlier and most recent portions of the series. (+43 more)
+Cohesion: 0.17
+Nodes (14): The single point where SQL is executed.  Every value is bound as a parameter. No, Lineage chain (prediction -> model -> features -> data -> config), ensure_portable_artifact_root(), _force_relative_location(), init_mlflow(), _is_unreachable(), _load_estimator(), log_training_run() (+6 more)
 
 ### Community 10 - "What every file does — in plain English"
 Cohesion: 0.12
 Nodes (16): `collector/` — measuring the machine, `conversion/` — data in and out as files, `crud/` — talking to the database safely, `dashboard/` — seeing it all, `database/` — the shape of the storage, `evaluation/` — proving the saving is real, Generated folders (not source code), `model/` — building inputs and forecasting (+8 more)
 
 ### Community 11 - "validate.py"
-Cohesion: 0.17
-Nodes (15): _check(), detect_cadence(), find_gaps(), history(), PASS / WARN / FAIL three-verdict severity model, persist(), profile(), STAGE 4 — Data Validation.  Null checks, duplicate checks and business rules, (+7 more)
+Cohesion: 0.22
+Nodes (12): _check(), detect_cadence(), find_gaps(), PASS / WARN / FAIL three-verdict severity model, profile(), STAGE 4 — Data Validation.  Null checks, duplicate checks and business rules,, Run every check. Returns (checks, summary)., The real sampling interval in seconds, from the data itself.      The configur (+4 more)
 
 ### Community 12 - "pipeline/schema.py"
-Cohesion: 0.18
-Nodes (13): coerce(), Coerce forgives, validate reports, contract(), expected_columns(), STAGE 2 — Data Engineering: schema management.  The contract lives in the `schem, Force `df` to match the declared types where possible.      Unparseable values b, Check `df` against the contract. Returns a report dict.      Reports rather than, Return the declared column rules for `table`, in declaration order. (+5 more)
+Cohesion: 0.16
+Nodes (15): coerce(), Coerce forgives, validate reports, contract(), expected_columns(), STAGE 2 — Data Engineering: schema management.  The contract lives in the `schem, Force `df` to match the declared types where possible.      Unparseable values b, Check `df` against the contract. Returns a report dict.      Reports rather than, Return the declared column rules for `table`, in declaration order. (+7 more)
 
 ### Community 13 - "Kubernetes — three environments that cannot reach each other"
 Cohesion: 0.12
 Nodes (16): 1. Its own data and configuration, 2. Its own image tag, 3. Its own port, Deploy, Kubernetes — three environments that cannot reach each other, Layout, NodePorts are not published to Windows, Prerequisite (+8 more)
 
 ### Community 14 - "app.py"
-Cohesion: 0.09
-Nodes (20): backtest(), clean_frame(), get_current_usage(), latest_process_alerts(), quality_checks(), Dashboard — the twelve-stage pipeline, visible.      streamlit run dashboard/a, Get the absolute most recent raw metric from the collector., targets() (+12 more)
+Cohesion: 0.11
+Nodes (12): backtest(), clean_frame(), event_log(), get_current_usage(), ladder(), latest_process_alerts(), quality_checks(), Dashboard — the twelve-stage pipeline, visible.      streamlit run dashboard/a (+4 more)
 
 ### Community 16 - "transform.py"
-Cohesion: 0.15
-Nodes (16): Columns marked as forecast targets in the contract., target_columns(), add_derived(), build_rollups(), Rollups keep p95 and max, not just mean, label_regimes(), normalise_units(), STAGE 6 — Data Transformation: standardisation, formatting, normalisation.  Cl (+8 more)
+Cohesion: 0.19
+Nodes (12): add_derived(), build_rollups(), Rollups keep p95 and max, not just mean, normalise_units(), STAGE 6 — Data Transformation: standardisation, formatting, normalisation.  Cl, Make units explicit and consistent.      `mem_used_mb` is converted to GB for, Downsample to `freq`, keeping mean, max and p95 per column.      Retaining onl, Every retention tier named in config. (+4 more)
 
 ### Community 17 - "wave_pattern"
-Cohesion: 0.06
-Nodes (35): Walk-Forward Backtest Replay, Baseline Ladder, Load Generator Required For A Forecastable Signal, The Measured SLA-Compliant Saving Is 2.52%, MLflow 3.x Requires A SQLite Backend, Nothing Is Hardcoded (config table owns every tunable), Predictive Resource Monitoring System, Promotion Gate (+27 more)
+Cohesion: 0.20
+Nodes (11): MLflow 3.x Requires A SQLite Backend, Nothing Is Hardcoded (config table owns every tunable), Predictive Resource Monitoring System, Twelve-Stage Pipeline, Bootstrap Paths (DB_PATH, DATA_DIR, MODEL_DIR, MLFLOW_URI), Lazy _crud() import (circular-import avoidance), config.py — typed cached config reader, schema.DEFAULT_CONFIG — seed defaults (+3 more)
+
+### Community 20 - "get_json"
+Cohesion: 0.15
+Nodes (23): get_bool(), get_json(), get_str(), _gap_blind_row_count(), Rows the previous, segment-unaware construction would have kept., all_encoded_columns(), category_shares(), encode() (+15 more)
+
+### Community 21 - "config_crud.py"
+Cohesion: 0.13
+Nodes (19): categories(), delete_value(), describe(), deserialise(), exists(), get_raw(), history(), config_history audit trail (+11 more)
+
+### Community 22 - "execute_query"
+Cohesion: 0.19
+Nodes (17): count_metrics(), delete_metric(), purge_before(), read_all(), read_between(), read_latest(), update_metric(), execute_query() (+9 more)
+
+### Community 23 - "run_twin.py"
+Cohesion: 0.19
+Nodes (12): _configure(), get_connection(), Initialise once per process, not per connection, Connection management and one-time database initialisation.  `get_connection()`, Open a connection, initialising the database on first use., Force re-initialisation on the next connection.      Only needed by tests and by, Pragmas that matter when a collector writes while a dashboard reads., reset_init_flag() (+4 more)
+
+### Community 24 - "execute_many"
+Cohesion: 0.21
+Nodes (13): generate_cadence_drift(), generate_gap_injection(), generate_multi_host_shift(), generate_regime_change(), generate_sustained_spike(), main(), Vary sampling interval mid-run (e.g. 3s -> 5s -> 4s)., Same signal shape as regime_change but with a different baseline load (shifted b (+5 more)
+
+### Community 44 - "forecast.py"
+Cohesion: 0.26
+Nodes (12): Online store (refresh_online / get_online_features), build_serving_row(), One feature vector for the most recent moment, for inference.      Identical con, champion_id(), latest_model_id(), load_model(), model_path(), predict_next() (+4 more)
+
+### Community 45 - "predictor.py"
+Cohesion: 0.22
+Nodes (12): backfill(), backfill_all(), Serving a baseline is a legitimate production state, _current_features(), Feature-version enforcement at serving, predict(), Inference — serving whatever the promotion gate approved.  The champion may be, Replay the champion across history, one prediction per sample.      The live s (+4 more)
+
+### Community 46 - "run_logger"
+Cohesion: 0.21
+Nodes (11): Load Generator Required For A Forecastable Signal, _burn(), Windows multiprocessing __main__ guard, intensity = number of cores to stress (0 = idle).     Spawns that many burn pro, Generates a repeating wave of CPU load so the collector records     a forecasta, Fully occupy one CPU core for `duration` seconds., _spawn_load(), wave_pattern() (+3 more)
+
+### Community 47 - "tuning.py"
+Cohesion: 0.23
+Nodes (11): apply_best(), cv_score(), _native(), Own search loop because KFold shuffles time, STAGE 11 (tuning) — hyperparameter search.  Randomised search over the grid in `, Write tuned hyperparameters into the config table.      Only when the gain excee, Draw `n_iter` distinct candidates from the search space., Rolling-origin CV score for one candidate. Returns (mean, std). (+3 more)
+
+### Community 48 - "drift.py"
+Cohesion: 0.18
+Nodes (11): events(), psi(), Drift detection and automatic retraining.  This is the "continuously analyses" c, Mean absolute error over the most recent scored predictions., The error the champion recorded when it was promoted., Write one drift event and return its id, so the outcome of any     retrain it tr, Population Stability Index between two distributions.      Conventional reading:, record_event() (+3 more)
+
+### Community 49 - "auth.py"
+Cohesion: 0.27
+Nodes (10): _client(), _fetch_role(), _login_form(), logout(), Supabase-backed authentication for the dashboard.  Two audiences share one app:, Blocks the app until a customer or admin session exists.      Returns the sessio, One client per browser session, NOT one per process.      The obvious spelling h, The role is looked up server-side, never trusted from the form. (+2 more)
+
+### Community 50 - "init_db"
+Cohesion: 0.22
+Nodes (9): apply_column_migrations(), init_db(), merge_defining_keys(), Create every table and index, then seed defaults. Idempotent., Add columns declared after this database was first created.      `CREATE TABLE I, Ensure newly added config keys join `features.defining_keys`.      That list dec, schema.SCHEMA_CONTRACT_ROWS — column contract, metrics.id declared nullable for non-SQLite sources (+1 more)
+
+### Community 51 - "forecast_horizon"
+Cohesion: 0.25
+Nodes (8): Training-serving skew prevention via version id, Train/serve consistency — one code path, predict_horizon(), Multi-step forecasting — now a thin wrapper over the serving path.  This module, The forecast trajectory as a plain list of values., Horizon reduced to a wrapper to kill duplicate lag logic, forecast_horizon(), Iterative multi-step forecast. Returns a trajectory DataFrame.      Each step
+
+### Community 52 - "sources.py"
+Cohesion: 0.33
+Nodes (4): CSVSource, get_source(), STAGE 1 — Data Sources.  Everything downstream reads through the `Source` interf, Build a Source from a URI-style spec.          get_source("sqlite://")         g
+
+### Community 53 - "Promotion Gate"
+Cohesion: 0.33
+Nodes (6): Baseline Ladder, Promotion Gate, Rolling-Origin Cross-Validation, stream_watermark.json — incremental ingest watermark, The Continuous Loop, Drift Detection (rolling MAE + PSI)
+
+### Community 54 - "fingerprint"
+Cohesion: 0.40
+Nodes (5): Full Prediction Lineage, fingerprint(), get_all_raw(), Stable short hash of the configuration.      Recorded alongside every trained mo, Return {key: (value, value_type)} for every key, or one category.
+
+### Community 55 - "log_once"
+Cohesion: 0.60
+Nodes (4): collect_metrics(), log_once(), Sample CPU, memory, and instantaneous disk I/O throughput.      Disk I/O is me, create_metric()
+
+### Community 56 - "get_online_features"
+Cohesion: 0.50
+Nodes (4): get_online_features(), The current feature vector for inference. Returns (frame, meta)., check(), Verify live memory usage against threshold and log top memory processes if cross
+
+### Community 57 - "evaluate"
+Cohesion: 0.40
+Nodes (5): BASELINE_PREFIX marker, current_champion(), evaluate(), Decide whether `result` should be promoted. Returns a decision dict., Same-window champion re-scoring
+
+### Community 58 - "in_cooldown"
+Cohesion: 0.50
+Nodes (4): in_cooldown(), Seconds since this target last actually retrained, or None.      'Retrained' mea, Whether `target` retrained too recently to retrain again., seconds_since_last_retrain()
+
+### Community 59 - "retrain"
+Cohesion: 0.50
+Nodes (4): Record what a triggered retrain actually produced.      `action` said what the m, Retrain each drifted target, re-gate, and write the gate's verdict     back onto, retrain(), update_event_outcome()
 
 ## Ambiguous Edges - Review These
 - `seasonal_naive()` → `label_regimes()`  [AMBIGUOUS]
@@ -174,13 +279,13 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **What is the exact relationship between `data_fingerprint()` and `Regrid buckets rather than reindex-matching`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `execute_query()` connect `execute_query` to `get_int`, `main.py`, `features.py`, `sources.py`, `config.py`, `etl.py`, `drift.py`, `validate.py`, `pipeline/schema.py`, `app.py`?**
-  _High betweenness centrality (0.173) - this node is a cross-community bridge._
-- **Why does `get_int()` connect `get_int` to `main.py`, `baseline.py`, `features.py`, `config.py`, `execute_query`, `clean.py`, `drift.py`, `validate.py`, `transform.py`?**
+- **Why does `execute_query()` connect `execute_query` to `get_int`, `main.py`, `sources.py`, `execute_query`, `etl.py`, `drift.py`, `validate.py`, `pipeline/schema.py`, `app.py`, `config_crud.py`, `run_twin.py`, `execute_many`, `forecast.py`, `predictor.py`, `drift.py`, `sources.py`, `fingerprint`, `log_once`, `get_online_features`, `evaluate`, `in_cooldown`, `retrain`?**
+  _High betweenness centrality (0.174) - this node is a cross-community bridge._
+- **Why does `get_int()` connect `get_int` to `main.py`, `baseline.py`, `features.py`, `config.py`, `clean.py`, `validate.py`, `predictor.py`, `run_logger`, `tuning.py`, `transform.py`, `drift.py`, `forecast_horizon`, `get_json`, `in_cooldown`?**
   _High betweenness centrality (0.056) - this node is a cross-community bridge._
-- **Why does `load_clean_frame()` connect `main.py` to `get_int`, `baseline.py`, `features.py`, `execute_query`, `etl.py`, `drift.py`?**
+- **Why does `load_clean_frame()` connect `main.py` to `get_int`, `baseline.py`, `features.py`, `sources.py`, `execute_query`, `drift.py`, `forecast.py`, `predictor.py`, `tuning.py`, `drift.py`, `forecast_horizon`, `run_twin.py`?**
   _High betweenness centrality (0.033) - this node is a cross-community bridge._
 - **What connects `run.sh script`, `Top level`, ``collector/` — measuring the machine` to the rest of the system?**
   _40 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `get_int` be split into smaller, more focused modules?**
-  _Cohesion score 0.05821917808219178 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05664568678267309 - nodes in this community are weakly interconnected._

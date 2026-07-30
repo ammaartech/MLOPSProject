@@ -47,16 +47,8 @@
   "45": "predictor.py",
   "46": "run_logger",
   "47": "tuning.py",
-  "48": "drift.py",
   "49": "auth.py",
   "50": "init_db",
   "51": "forecast_horizon",
-  "52": "sources.py",
-  "53": "Promotion Gate",
-  "54": "fingerprint",
-  "55": "log_once",
-  "56": "get_online_features",
-  "57": "evaluate",
-  "58": "in_cooldown",
-  "59": "retrain"
+  "53": "Promotion Gate"
 }

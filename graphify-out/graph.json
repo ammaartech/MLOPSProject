@@ -209,8 +209,8 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "collector_load_generator_main",
-      "community": 1,
-      "community_name": "main.py",
+      "community": 46,
+      "community_name": "run_logger",
       "norm_label": "main()"
     },
     {
@@ -253,8 +253,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "collector_psutil_logger",
-      "community": 55,
-      "community_name": "log_once",
+      "community": 46,
+      "community_name": "run_logger",
       "norm_label": "psutil_logger.py"
     },
     {
@@ -264,8 +264,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "collector_psutil_logger_collect_metrics",
-      "community": 55,
-      "community_name": "log_once",
+      "community": 46,
+      "community_name": "run_logger",
       "norm_label": "collect_metrics()"
     },
     {
@@ -275,8 +275,8 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "collector_psutil_logger_log_once",
-      "community": 55,
-      "community_name": "log_once",
+      "community": 46,
+      "community_name": "run_logger",
       "norm_label": "log_once()"
     },
     {
@@ -297,8 +297,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "collector_psutil_logger_rationale_10",
-      "community": 55,
-      "community_name": "log_once",
+      "community": 46,
+      "community_name": "run_logger",
       "norm_label": "sample cpu, memory, and instantaneous disk i/o throughput.      disk i/o is me"
     },
     {
@@ -484,8 +484,8 @@
       "source_location": "L117",
       "_origin": "ast",
       "id": "config_get_int",
-      "community": 0,
-      "community_name": "get_int",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "get_int()"
     },
     {
@@ -528,8 +528,8 @@
       "source_location": "L136",
       "_origin": "ast",
       "id": "config_get_json",
-      "community": 20,
-      "community_name": "get_json",
+      "community": 1,
+      "community_name": "main.py",
       "norm_label": "get_json()"
     },
     {
@@ -704,8 +704,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "conversion_csv_export",
-      "community": 4,
-      "community_name": "sources.py",
+      "community": 6,
+      "community_name": "execute_query",
       "norm_label": "csv_export.py"
     },
     {
@@ -715,8 +715,8 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "conversion_csv_export_write",
-      "community": 4,
-      "community_name": "sources.py",
+      "community": 6,
+      "community_name": "execute_query",
       "norm_label": "_write()"
     },
     {
@@ -726,8 +726,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "conversion_csv_export_export_raw",
-      "community": 4,
-      "community_name": "sources.py",
+      "community": 6,
+      "community_name": "execute_query",
       "norm_label": "export_raw()"
     },
     {
@@ -737,8 +737,8 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "conversion_csv_export_export_clean",
-      "community": 4,
-      "community_name": "sources.py",
+      "community": 6,
+      "community_name": "execute_query",
       "norm_label": "export_clean()"
     },
     {
@@ -748,8 +748,8 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "conversion_csv_export_export_rollup",
-      "community": 4,
-      "community_name": "sources.py",
+      "community": 6,
+      "community_name": "execute_query",
       "norm_label": "export_rollup()"
     },
     {
@@ -759,8 +759,8 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "conversion_csv_export_export_features",
-      "community": 4,
-      "community_name": "sources.py",
+      "community": 6,
+      "community_name": "execute_query",
       "norm_label": "export_features()"
     },
     {
@@ -770,8 +770,8 @@
       "source_location": "L97",
       "_origin": "ast",
       "id": "conversion_csv_export_export_all",
-      "community": 4,
-      "community_name": "sources.py",
+      "community": 6,
+      "community_name": "execute_query",
       "norm_label": "export_all()"
     },
     {
@@ -781,8 +781,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "conversion_csv_export_rationale_1",
-      "community": 4,
-      "community_name": "sources.py",
+      "community": 6,
+      "community_name": "execute_query",
       "norm_label": "csv export \u2014 the data plane in reverse.  stage 1 defines a `csvsource` that read"
     },
     {
@@ -803,8 +803,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "crud_config_crud",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "config_crud.py"
     },
     {
@@ -814,8 +814,8 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "crud_config_crud_get_raw",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "get_raw()"
     },
     {
@@ -825,8 +825,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "crud_config_crud_get_all_raw",
-      "community": 54,
-      "community_name": "fingerprint",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "get_all_raw()"
     },
     {
@@ -836,8 +836,8 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "crud_config_crud_describe",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "describe()"
     },
     {
@@ -847,8 +847,8 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "crud_config_crud_categories",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "categories()"
     },
     {
@@ -858,8 +858,8 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "crud_config_crud_exists",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "exists()"
     },
     {
@@ -869,8 +869,8 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "crud_config_crud_set_value",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "set_value()"
     },
     {
@@ -880,8 +880,8 @@
       "source_location": "L122",
       "_origin": "ast",
       "id": "crud_config_crud_delete_value",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "delete_value()"
     },
     {
@@ -891,8 +891,8 @@
       "source_location": "L128",
       "_origin": "ast",
       "id": "crud_config_crud_history",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "history()"
     },
     {
@@ -902,8 +902,8 @@
       "source_location": "L143",
       "_origin": "ast",
       "id": "crud_config_crud_serialise",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "serialise()"
     },
     {
@@ -913,8 +913,8 @@
       "source_location": "L154",
       "_origin": "ast",
       "id": "crud_config_crud_deserialise",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "deserialise()"
     },
     {
@@ -924,8 +924,8 @@
       "source_location": "L168",
       "_origin": "ast",
       "id": "crud_config_crud_fingerprint",
-      "community": 54,
-      "community_name": "fingerprint",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "fingerprint()"
     },
     {
@@ -935,8 +935,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "crud_config_crud_rationale_1",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "crud for the `config` table.  this is the storage layer only \u2014 raw strings in, r"
     },
     {
@@ -946,8 +946,8 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "crud_config_crud_rationale_22",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "return (value, value_type) for `key`, or none if it does not exist."
     },
     {
@@ -957,8 +957,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "crud_config_crud_rationale_30",
-      "community": 54,
-      "community_name": "fingerprint",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "return {key: (value, value_type)} for every key, or one category."
     },
     {
@@ -968,8 +968,8 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "crud_config_crud_rationale_45",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "full rows for display: key, value, type, category, description."
     },
     {
@@ -979,8 +979,8 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "crud_config_crud_rationale_72",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "insert or update `key`, recording the change in `config_history`.      `value` m"
     },
     {
@@ -990,8 +990,8 @@
       "source_location": "L123",
       "_origin": "ast",
       "id": "crud_config_crud_rationale_123",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "remove a key. the next seed will restore it if it has a default."
     },
     {
@@ -1001,8 +1001,8 @@
       "source_location": "L144",
       "_origin": "ast",
       "id": "crud_config_crud_rationale_144",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "python object -> the text stored in the table."
     },
     {
@@ -1012,8 +1012,8 @@
       "source_location": "L155",
       "_origin": "ast",
       "id": "crud_config_crud_rationale_155",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "the text stored in the table -> a python object."
     },
     {
@@ -1023,8 +1023,8 @@
       "source_location": "L169",
       "_origin": "ast",
       "id": "crud_config_crud_rationale_169",
-      "community": 54,
-      "community_name": "fingerprint",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "stable short hash of the configuration.      recorded alongside every trained mo"
     },
     {
@@ -1034,7 +1034,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "crud_metrics_crud",
-      "community": 22,
+      "community": 6,
       "community_name": "execute_query",
       "norm_label": "metrics_crud.py"
     },
@@ -1045,8 +1045,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "crud_metrics_crud_create_metric",
-      "community": 55,
-      "community_name": "log_once",
+      "community": 46,
+      "community_name": "run_logger",
       "norm_label": "create_metric()"
     },
     {
@@ -1056,7 +1056,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "crud_metrics_crud_read_all",
-      "community": 22,
+      "community": 6,
       "community_name": "execute_query",
       "norm_label": "read_all()"
     },
@@ -1067,7 +1067,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "crud_metrics_crud_read_latest",
-      "community": 22,
+      "community": 6,
       "community_name": "execute_query",
       "norm_label": "read_latest()"
     },
@@ -1078,7 +1078,7 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "crud_metrics_crud_read_between",
-      "community": 22,
+      "community": 6,
       "community_name": "execute_query",
       "norm_label": "read_between()"
     },
@@ -1089,8 +1089,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "crud_metrics_crud_count_metrics",
-      "community": 22,
-      "community_name": "execute_query",
+      "community": 46,
+      "community_name": "run_logger",
       "norm_label": "count_metrics()"
     },
     {
@@ -1100,7 +1100,7 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "crud_metrics_crud_update_metric",
-      "community": 22,
+      "community": 6,
       "community_name": "execute_query",
       "norm_label": "update_metric()"
     },
@@ -1111,7 +1111,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "crud_metrics_crud_delete_metric",
-      "community": 22,
+      "community": 6,
       "community_name": "execute_query",
       "norm_label": "delete_metric()"
     },
@@ -1122,7 +1122,7 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "crud_metrics_crud_purge_before",
-      "community": 22,
+      "community": 6,
       "community_name": "execute_query",
       "norm_label": "purge_before()"
     },
@@ -1133,8 +1133,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "crud_query",
-      "community": 9,
-      "community_name": "drift.py",
+      "community": 23,
+      "community_name": "run_twin.py",
       "norm_label": "query.py"
     },
     {
@@ -1144,7 +1144,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "crud_query_execute_query",
-      "community": 22,
+      "community": 6,
       "community_name": "execute_query",
       "norm_label": "execute_query()"
     },
@@ -1166,8 +1166,8 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "crud_query_execute_many",
-      "community": 24,
-      "community_name": "execute_many",
+      "community": 23,
+      "community_name": "run_twin.py",
       "norm_label": "execute_many()"
     },
     {
@@ -1177,8 +1177,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "crud_query_rationale_1",
-      "community": 9,
-      "community_name": "drift.py",
+      "community": 23,
+      "community_name": "run_twin.py",
       "norm_label": "the single point where sql is executed.  every value is bound as a parameter. no"
     },
     {
@@ -1188,7 +1188,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "crud_query_rationale_14",
-      "community": 22,
+      "community": 6,
       "community_name": "execute_query",
       "norm_label": "run one statement. returns rows when `fetch`, else the row count."
     },
@@ -1210,8 +1210,8 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "crud_query_rationale_62",
-      "community": 24,
-      "community_name": "execute_many",
+      "community": 23,
+      "community_name": "run_twin.py",
       "norm_label": "insert many rows over one connection. returns the row count.      a per-row `exe"
     },
     {
@@ -1240,7 +1240,7 @@
       "label": "clean_frame()",
       "file_type": "code",
       "source_file": "dashboard/app.py",
-      "source_location": "L51",
+      "source_location": "L62",
       "_origin": "ast",
       "id": "dashboard_app_clean_frame",
       "community": 14,
@@ -1251,7 +1251,7 @@
       "label": "latest_run()",
       "file_type": "code",
       "source_file": "dashboard/app.py",
-      "source_location": "L58",
+      "source_location": "L69",
       "_origin": "ast",
       "id": "dashboard_app_latest_run",
       "community": 14,
@@ -1262,7 +1262,7 @@
       "label": "run_history()",
       "file_type": "code",
       "source_file": "dashboard/app.py",
-      "source_location": "L65",
+      "source_location": "L76",
       "_origin": "ast",
       "id": "dashboard_app_run_history",
       "community": 14,
@@ -1273,7 +1273,7 @@
       "label": "quality_checks()",
       "file_type": "code",
       "source_file": "dashboard/app.py",
-      "source_location": "L75",
+      "source_location": "L86",
       "_origin": "ast",
       "id": "dashboard_app_quality_checks",
       "community": 14,
@@ -1284,7 +1284,7 @@
       "label": "registry()",
       "file_type": "code",
       "source_file": "dashboard/app.py",
-      "source_location": "L84",
+      "source_location": "L95",
       "_origin": "ast",
       "id": "dashboard_app_registry",
       "community": 14,
@@ -1295,7 +1295,7 @@
       "label": "champions()",
       "file_type": "code",
       "source_file": "dashboard/app.py",
-      "source_location": "L95",
+      "source_location": "L106",
       "_origin": "ast",
       "id": "dashboard_app_champions",
       "community": 14,
@@ -1306,7 +1306,7 @@
       "label": "backtest()",
       "file_type": "code",
       "source_file": "dashboard/app.py",
-      "source_location": "L102",
+      "source_location": "L113",
       "_origin": "ast",
       "id": "dashboard_app_backtest",
       "community": 14,
@@ -1317,18 +1317,18 @@
       "label": "ladder()",
       "file_type": "code",
       "source_file": "dashboard/app.py",
-      "source_location": "L110",
+      "source_location": "L121",
       "_origin": "ast",
       "id": "dashboard_app_ladder",
-      "community": 14,
-      "community_name": "app.py",
+      "community": 1,
+      "community_name": "main.py",
       "norm_label": "ladder()"
     },
     {
       "label": "latest_process_alerts()",
       "file_type": "code",
       "source_file": "dashboard/app.py",
-      "source_location": "L126",
+      "source_location": "L137",
       "_origin": "ast",
       "id": "dashboard_app_latest_process_alerts",
       "community": 14,
@@ -1339,7 +1339,7 @@
       "label": "event_log()",
       "file_type": "code",
       "source_file": "dashboard/app.py",
-      "source_location": "L212",
+      "source_location": "L223",
       "_origin": "ast",
       "id": "dashboard_app_event_log",
       "community": 14,
@@ -1350,7 +1350,7 @@
       "label": "targets()",
       "file_type": "code",
       "source_file": "dashboard/app.py",
-      "source_location": "L217",
+      "source_location": "L228",
       "_origin": "ast",
       "id": "dashboard_app_targets",
       "community": 14,
@@ -1361,7 +1361,7 @@
       "label": "get_current_usage()",
       "file_type": "code",
       "source_file": "dashboard/app.py",
-      "source_location": "L561",
+      "source_location": "L662",
       "_origin": "ast",
       "id": "dashboard_app_get_current_usage",
       "community": 14,
@@ -1372,23 +1372,12 @@
       "label": "_highlight()",
       "file_type": "code",
       "source_file": "dashboard/app.py",
-      "source_location": "L971",
+      "source_location": "L869",
       "_origin": "ast",
       "id": "dashboard_app_highlight",
       "community": 14,
       "community_name": "app.py",
       "norm_label": "_highlight()"
-    },
-    {
-      "label": "colour()",
-      "file_type": "code",
-      "source_file": "dashboard/app.py",
-      "source_location": "L1018",
-      "_origin": "ast",
-      "id": "dashboard_app_colour",
-      "community": 14,
-      "community_name": "app.py",
-      "norm_label": "colour()"
     },
     {
       "label": "Dashboard \u2014 the twelve-stage pipeline, visible.      streamlit run dashboard/a",
@@ -1402,15 +1391,15 @@
       "norm_label": "dashboard \u2014 the twelve-stage pipeline, visible.      streamlit run dashboard/a"
     },
     {
-      "label": "Get the absolute most recent raw metric from the collector.",
+      "label": "The absolute most recent raw metric from the collector.",
       "file_type": "rationale",
       "source_file": "dashboard/app.py",
-      "source_location": "L562",
+      "source_location": "L663",
       "_origin": "ast",
-      "id": "dashboard_app_rationale_562",
+      "id": "dashboard_app_rationale_663",
       "community": 14,
       "community_name": "app.py",
-      "norm_label": "get the absolute most recent raw metric from the collector."
+      "norm_label": "the absolute most recent raw metric from the collector."
     },
     {
       "label": "apply_sql.py",
@@ -1504,7 +1493,7 @@
       "label": "require_login()",
       "file_type": "code",
       "source_file": "dashboard/auth.py",
-      "source_location": "L132",
+      "source_location": "L133",
       "_origin": "ast",
       "id": "dashboard_auth_require_login",
       "community": 49,
@@ -1515,7 +1504,7 @@
       "label": "logout()",
       "file_type": "code",
       "source_file": "dashboard/auth.py",
-      "source_location": "L158",
+      "source_location": "L176",
       "_origin": "ast",
       "id": "dashboard_auth_logout",
       "community": 49,
@@ -1559,12 +1548,287 @@
       "label": "Blocks the app until a customer or admin session exists.      Returns the sessio",
       "file_type": "rationale",
       "source_file": "dashboard/auth.py",
-      "source_location": "L133",
+      "source_location": "L134",
       "_origin": "ast",
-      "id": "dashboard_auth_rationale_133",
+      "id": "dashboard_auth_rationale_134",
       "community": 49,
       "community_name": "auth.py",
       "norm_label": "blocks the app until a customer or admin session exists.      returns the sessio"
+    },
+    {
+      "label": "theme.py",
+      "file_type": "code",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dashboard_theme",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "theme.py"
+    },
+    {
+      "label": "series()",
+      "file_type": "code",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L74",
+      "_origin": "ast",
+      "id": "dashboard_theme_series",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "series()"
+    },
+    {
+      "label": "apply()",
+      "file_type": "code",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L380",
+      "_origin": "ast",
+      "id": "dashboard_theme_apply",
+      "community": 22,
+      "community_name": "execute_query",
+      "norm_label": "apply()"
+    },
+    {
+      "label": "page()",
+      "file_type": "code",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L388",
+      "_origin": "ast",
+      "id": "dashboard_theme_page",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "page()"
+    },
+    {
+      "label": "section()",
+      "file_type": "code",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L396",
+      "_origin": "ast",
+      "id": "dashboard_theme_section",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "section()"
+    },
+    {
+      "label": "sub()",
+      "file_type": "code",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L401",
+      "_origin": "ast",
+      "id": "dashboard_theme_sub",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "sub()"
+    },
+    {
+      "label": "note()",
+      "file_type": "code",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L408",
+      "_origin": "ast",
+      "id": "dashboard_theme_note",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "note()"
+    },
+    {
+      "label": "rule()",
+      "file_type": "code",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L413",
+      "_origin": "ast",
+      "id": "dashboard_theme_rule",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "rule()"
+    },
+    {
+      "label": "status_tag()",
+      "file_type": "code",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L429",
+      "_origin": "ast",
+      "id": "dashboard_theme_status_tag",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "status_tag()"
+    },
+    {
+      "label": "kv()",
+      "file_type": "code",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L441",
+      "_origin": "ast",
+      "id": "dashboard_theme_kv",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "kv()"
+    },
+    {
+      "label": "legend()",
+      "file_type": "code",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L448",
+      "_origin": "ast",
+      "id": "dashboard_theme_legend",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "legend()"
+    },
+    {
+      "label": "bullet()",
+      "file_type": "code",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L457",
+      "_origin": "ast",
+      "id": "dashboard_theme_bullet",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "bullet()"
+    },
+    {
+      "label": "status_frame()",
+      "file_type": "code",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L512",
+      "_origin": "ast",
+      "id": "dashboard_theme_status_frame",
+      "community": 22,
+      "community_name": "execute_query",
+      "norm_label": "status_frame()"
+    },
+    {
+      "label": "The dashboard's visual system, in one place.  `.streamlit/config.toml` carries e",
+      "file_type": "rationale",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "dashboard_theme_rationale_1",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "the dashboard's visual system, in one place.  `.streamlit/config.toml` carries e"
+    },
+    {
+      "label": "The first `n` categorical colours, in slot order.      Pass the result straight",
+      "file_type": "rationale",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L75",
+      "_origin": "ast",
+      "id": "dashboard_theme_rationale_75",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "the first `n` categorical colours, in slot order.      pass the result straight"
+    },
+    {
+      "label": "Inject the stylesheet. Call once, immediately after set_page_config.",
+      "file_type": "rationale",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L381",
+      "_origin": "ast",
+      "id": "dashboard_theme_rationale_381",
+      "community": 22,
+      "community_name": "execute_query",
+      "norm_label": "inject the stylesheet. call once, immediately after set_page_config."
+    },
+    {
+      "label": "Level 1 \u2014 the tab's own title. Exactly one per tab.",
+      "file_type": "rationale",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L389",
+      "_origin": "ast",
+      "id": "dashboard_theme_rationale_389",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "level 1 \u2014 the tab's own title. exactly one per tab."
+    },
+    {
+      "label": "Level 2 \u2014 a rule-and-label divider between blocks of a tab.",
+      "file_type": "rationale",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L397",
+      "_origin": "ast",
+      "id": "dashboard_theme_rationale_397",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "level 2 \u2014 a rule-and-label divider between blocks of a tab."
+    },
+    {
+      "label": "Level 3 \u2014 a titled chart or table inside a section.",
+      "file_type": "rationale",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L402",
+      "_origin": "ast",
+      "id": "dashboard_theme_rationale_402",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "level 3 \u2014 a titled chart or table inside a section."
+    },
+    {
+      "label": "Explanatory prose. Narrower measure than the page, muted.",
+      "file_type": "rationale",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L409",
+      "_origin": "ast",
+      "id": "dashboard_theme_rationale_409",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "explanatory prose. narrower measure than the page, muted."
+    },
+    {
+      "label": "A colour chip and its word, together.      The word is not optional. Colour alon",
+      "file_type": "rationale",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L430",
+      "_origin": "ast",
+      "id": "dashboard_theme_rationale_430",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "a colour chip and its word, together.      the word is not optional. colour alon"
+    },
+    {
+      "label": "A definition list. Replaces the bulleted `**key**: value` blocks \u2014     same cont",
+      "file_type": "rationale",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L442",
+      "_origin": "ast",
+      "id": "dashboard_theme_rationale_442",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "a definition list. replaces the bulleted `**key**: value` blocks \u2014     same cont"
+    },
+    {
+      "label": "items: [(colour, label), ...]",
+      "file_type": "rationale",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L449",
+      "_origin": "ast",
+      "id": "dashboard_theme_rationale_449",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "items: [(colour, label), ...]"
+    },
+    {
+      "label": "A bullet chart per resource, all on one 0-100% scale.      rows: [{name, capacit",
+      "file_type": "rationale",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L458",
+      "_origin": "ast",
+      "id": "dashboard_theme_rationale_458",
+      "community": 21,
+      "community_name": "config_crud.py",
+      "norm_label": "a bullet chart per resource, all on one 0-100% scale.      rows: [{name, capacit"
+    },
+    {
+      "label": "Tint a table's rows by a status column, in light-surface tints.      The tint is",
+      "file_type": "rationale",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L513",
+      "_origin": "ast",
+      "id": "dashboard_theme_rationale_513",
+      "community": 22,
+      "community_name": "execute_query",
+      "norm_label": "tint a table's rows by a status column, in light-surface tints.      the tint is"
     },
     {
       "label": "database/__init__.py",
@@ -1584,8 +1848,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "database_connection",
-      "community": 23,
-      "community_name": "run_twin.py",
+      "community": 50,
+      "community_name": "init_db",
       "norm_label": "connection.py"
     },
     {
@@ -1595,8 +1859,8 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "database_connection_configure",
-      "community": 23,
-      "community_name": "run_twin.py",
+      "community": 50,
+      "community_name": "init_db",
       "norm_label": "_configure()"
     },
     {
@@ -1650,8 +1914,8 @@
       "source_location": "L168",
       "_origin": "ast",
       "id": "database_connection_reset_init_flag",
-      "community": 23,
-      "community_name": "run_twin.py",
+      "community": 24,
+      "community_name": "execute_many",
       "norm_label": "reset_init_flag()"
     },
     {
@@ -1661,8 +1925,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "database_connection_rationale_1",
-      "community": 23,
-      "community_name": "run_twin.py",
+      "community": 50,
+      "community_name": "init_db",
       "norm_label": "connection management and one-time database initialisation.  `get_connection()`"
     },
     {
@@ -1672,8 +1936,8 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "database_connection_rationale_32",
-      "community": 23,
-      "community_name": "run_twin.py",
+      "community": 50,
+      "community_name": "init_db",
       "norm_label": "pragmas that matter when a collector writes while a dashboard reads."
     },
     {
@@ -1727,8 +1991,8 @@
       "source_location": "L169",
       "_origin": "ast",
       "id": "database_connection_rationale_169",
-      "community": 23,
-      "community_name": "run_twin.py",
+      "community": 24,
+      "community_name": "execute_many",
       "norm_label": "force re-initialisation on the next connection.      only needed by tests and by"
     },
     {
@@ -1738,8 +2002,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "database_schema",
-      "community": 23,
-      "community_name": "run_twin.py",
+      "community": 50,
+      "community_name": "init_db",
       "norm_label": "database/schema.py"
     },
     {
@@ -1749,8 +2013,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "database_schema_rationale_1",
-      "community": 23,
-      "community_name": "run_twin.py",
+      "community": 50,
+      "community_name": "init_db",
       "norm_label": "every table definition and every default value in the system.  this module is"
     },
     {
@@ -2135,8 +2399,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "main_collector_menu",
-      "community": 1,
-      "community_name": "main.py",
+      "community": 46,
+      "community_name": "run_logger",
       "norm_label": "collector_menu()"
     },
     {
@@ -2146,7 +2410,7 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "main_data_menu",
-      "community": 22,
+      "community": 6,
       "community_name": "execute_query",
       "norm_label": "data_menu()"
     },
@@ -2157,8 +2421,8 @@
       "source_location": "L116",
       "_origin": "ast",
       "id": "main_pipeline_menu",
-      "community": 1,
-      "community_name": "main.py",
+      "community": 4,
+      "community_name": "sources.py",
       "norm_label": "pipeline_menu()"
     },
     {
@@ -2201,8 +2465,8 @@
       "source_location": "L340",
       "_origin": "ast",
       "id": "main_config_menu",
-      "community": 21,
-      "community_name": "config_crud.py",
+      "community": 5,
+      "community_name": "config.py",
       "norm_label": "config_menu()"
     },
     {
@@ -2498,8 +2762,8 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "model_feature_store_version_id",
-      "community": 6,
-      "community_name": "execute_query",
+      "community": 2,
+      "community_name": "baseline.py",
       "norm_label": "version_id()"
     },
     {
@@ -2575,8 +2839,8 @@
       "source_location": "L222",
       "_origin": "ast",
       "id": "model_feature_store_get_online_features",
-      "community": 56,
-      "community_name": "get_online_features",
+      "community": 6,
+      "community_name": "execute_query",
       "norm_label": "get_online_features()"
     },
     {
@@ -2652,8 +2916,8 @@
       "source_location": "L51",
       "_origin": "ast",
       "id": "model_feature_store_rationale_51",
-      "community": 6,
-      "community_name": "execute_query",
+      "community": 2,
+      "community_name": "baseline.py",
       "norm_label": "stable short id for one (target, feature definition, data) triple."
     },
     {
@@ -2696,8 +2960,8 @@
       "source_location": "L223",
       "_origin": "ast",
       "id": "model_feature_store_rationale_223",
-      "community": 56,
-      "community_name": "get_online_features",
+      "community": 6,
+      "community_name": "execute_query",
       "norm_label": "the current feature vector for inference. returns (frame, meta)."
     },
     {
@@ -2861,8 +3125,8 @@
       "source_location": "L265",
       "_origin": "ast",
       "id": "model_features_build_serving_row",
-      "community": 44,
-      "community_name": "forecast.py",
+      "community": 51,
+      "community_name": "forecast_horizon",
       "norm_label": "build_serving_row()"
     },
     {
@@ -2872,8 +3136,8 @@
       "source_location": "L292",
       "_origin": "ast",
       "id": "model_features_gap_blind_row_count",
-      "community": 20,
-      "community_name": "get_json",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "_gap_blind_row_count()"
     },
     {
@@ -2883,8 +3147,8 @@
       "source_location": "L316",
       "_origin": "ast",
       "id": "model_features_chronological_split",
-      "community": 2,
-      "community_name": "baseline.py",
+      "community": 1,
+      "community_name": "main.py",
       "norm_label": "chronological_split()"
     },
     {
@@ -2894,8 +3158,8 @@
       "source_location": "L339",
       "_origin": "ast",
       "id": "model_features_rolling_origin_splits",
-      "community": 3,
-      "community_name": "features.py",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "rolling_origin_splits()"
     },
     {
@@ -3015,8 +3279,8 @@
       "source_location": "L266",
       "_origin": "ast",
       "id": "model_features_rationale_266",
-      "community": 44,
-      "community_name": "forecast.py",
+      "community": 51,
+      "community_name": "forecast_horizon",
       "norm_label": "one feature vector for the most recent moment, for inference.      identical con"
     },
     {
@@ -3026,8 +3290,8 @@
       "source_location": "L293",
       "_origin": "ast",
       "id": "model_features_rationale_293",
-      "community": 20,
-      "community_name": "get_json",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "rows the previous, segment-unaware construction would have kept."
     },
     {
@@ -3037,8 +3301,8 @@
       "source_location": "L317",
       "_origin": "ast",
       "id": "model_features_rationale_317",
-      "community": 2,
-      "community_name": "baseline.py",
+      "community": 1,
+      "community_name": "main.py",
       "norm_label": "train on the earlier portion, test on the later.      shuffling a time series pu"
     },
     {
@@ -3048,8 +3312,8 @@
       "source_location": "L340",
       "_origin": "ast",
       "id": "model_features_rationale_340",
-      "community": 3,
-      "community_name": "features.py",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "expanding-window cross-validation for time series.      each fold trains on ever"
     },
     {
@@ -3059,8 +3323,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "model_forecast",
-      "community": 44,
-      "community_name": "forecast.py",
+      "community": 2,
+      "community_name": "baseline.py",
       "norm_label": "forecast.py"
     },
     {
@@ -3081,8 +3345,8 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "model_forecast_register",
-      "community": 6,
-      "community_name": "execute_query",
+      "community": 2,
+      "community_name": "baseline.py",
       "norm_label": "register()"
     },
     {
@@ -3092,8 +3356,8 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "model_forecast_champion_id",
-      "community": 44,
-      "community_name": "forecast.py",
+      "community": 2,
+      "community_name": "baseline.py",
       "norm_label": "champion_id()"
     },
     {
@@ -3103,8 +3367,8 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "model_forecast_latest_model_id",
-      "community": 44,
-      "community_name": "forecast.py",
+      "community": 2,
+      "community_name": "baseline.py",
       "norm_label": "latest_model_id()"
     },
     {
@@ -3114,8 +3378,8 @@
       "source_location": "L103",
       "_origin": "ast",
       "id": "model_forecast_model_path",
-      "community": 44,
-      "community_name": "forecast.py",
+      "community": 45,
+      "community_name": "predictor.py",
       "norm_label": "model_path()"
     },
     {
@@ -3125,8 +3389,8 @@
       "source_location": "L107",
       "_origin": "ast",
       "id": "model_forecast_load_model",
-      "community": 44,
-      "community_name": "forecast.py",
+      "community": 45,
+      "community_name": "predictor.py",
       "norm_label": "load_model()"
     },
     {
@@ -3158,8 +3422,8 @@
       "source_location": "L336",
       "_origin": "ast",
       "id": "model_forecast_predict_next",
-      "community": 44,
-      "community_name": "forecast.py",
+      "community": 2,
+      "community_name": "baseline.py",
       "norm_label": "predict_next()"
     },
     {
@@ -3180,8 +3444,8 @@
       "source_location": "L382",
       "_origin": "ast",
       "id": "model_forecast_score_champion",
-      "community": 44,
-      "community_name": "forecast.py",
+      "community": 2,
+      "community_name": "baseline.py",
       "norm_label": "_score_champion()"
     },
     {
@@ -3202,8 +3466,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "model_forecast_rationale_1",
-      "community": 44,
-      "community_name": "forecast.py",
+      "community": 2,
+      "community_name": "baseline.py",
       "norm_label": "stage 11 \u2014 machine learning model: training, evaluation, tuning.  trains one for"
     },
     {
@@ -3213,8 +3477,8 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "model_forecast_rationale_64",
-      "community": 6,
-      "community_name": "execute_query",
+      "community": 2,
+      "community_name": "baseline.py",
       "norm_label": "record a trained model with its full lineage."
     },
     {
@@ -3235,8 +3499,8 @@
       "source_location": "L337",
       "_origin": "ast",
       "id": "model_forecast_rationale_337",
-      "community": 44,
-      "community_name": "forecast.py",
+      "community": 2,
+      "community_name": "baseline.py",
       "norm_label": "predict the next value using the champion model.      falls back to the most rec"
     },
     {
@@ -3246,8 +3510,8 @@
       "source_location": "L383",
       "_origin": "ast",
       "id": "model_forecast_rationale_383",
-      "community": 44,
-      "community_name": "forecast.py",
+      "community": 2,
+      "community_name": "baseline.py",
       "norm_label": "mae of the current trained champion on this split's test window.      returns no"
     },
     {
@@ -3279,8 +3543,8 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "model_horizon_horizon_summary",
-      "community": 1,
-      "community_name": "main.py",
+      "community": 51,
+      "community_name": "forecast_horizon",
       "norm_label": "horizon_summary()"
     },
     {
@@ -3312,8 +3576,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "model_horizon_rationale_33",
-      "community": 1,
-      "community_name": "main.py",
+      "community": 51,
+      "community_name": "forecast_horizon",
       "norm_label": "peak, p95 and mean of the forecast horizon."
     },
     {
@@ -3334,8 +3598,8 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "model_scaling_fit_scaler",
-      "community": 2,
-      "community_name": "baseline.py",
+      "community": 44,
+      "community_name": "forecast.py",
       "norm_label": "fit_scaler()"
     },
     {
@@ -3422,8 +3686,8 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "model_scaling_rationale_38",
-      "community": 2,
-      "community_name": "baseline.py",
+      "community": 44,
+      "community_name": "forecast.py",
       "norm_label": "fit a scaler on training rows. returns a serialisable dict.      a plain dict ra"
     },
     {
@@ -3477,8 +3741,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "model_selection",
-      "community": 2,
-      "community_name": "baseline.py",
+      "community": 1,
+      "community_name": "main.py",
       "norm_label": "selection.py"
     },
     {
@@ -3499,8 +3763,8 @@
       "source_location": "L51",
       "_origin": "ast",
       "id": "model_selection_cardinality_screen",
-      "community": 2,
-      "community_name": "baseline.py",
+      "community": 1,
+      "community_name": "main.py",
       "norm_label": "cardinality_screen()"
     },
     {
@@ -3510,8 +3774,8 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "model_selection_correlation_screen",
-      "community": 2,
-      "community_name": "baseline.py",
+      "community": 1,
+      "community_name": "main.py",
       "norm_label": "correlation_screen()"
     },
     {
@@ -3521,8 +3785,8 @@
       "source_location": "L116",
       "_origin": "ast",
       "id": "model_selection_importance_screen",
-      "community": 2,
-      "community_name": "baseline.py",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "importance_screen()"
     },
     {
@@ -3532,8 +3796,8 @@
       "source_location": "L142",
       "_origin": "ast",
       "id": "model_selection_run",
-      "community": 2,
-      "community_name": "baseline.py",
+      "community": 1,
+      "community_name": "main.py",
       "norm_label": "run()"
     },
     {
@@ -3565,8 +3829,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "model_selection_rationale_1",
-      "community": 2,
-      "community_name": "baseline.py",
+      "community": 1,
+      "community_name": "main.py",
       "norm_label": "stage 8 \u2014 feature selection: cardinality, correlation, importance.  three screen"
     },
     {
@@ -3587,8 +3851,8 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "model_selection_rationale_52",
-      "community": 2,
-      "community_name": "baseline.py",
+      "community": 1,
+      "community_name": "main.py",
       "norm_label": "drop features that are constant or effectively so."
     },
     {
@@ -3598,8 +3862,8 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "model_selection_rationale_70",
-      "community": 2,
-      "community_name": "baseline.py",
+      "community": 1,
+      "community_name": "main.py",
       "norm_label": "collapse near-duplicate features.      when two features exceed the threshold, t"
     },
     {
@@ -3609,8 +3873,8 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "model_selection_rationale_118",
-      "community": 2,
-      "community_name": "baseline.py",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "drop features whose shuffling does not measurably hurt the model."
     },
     {
@@ -3620,8 +3884,8 @@
       "source_location": "L143",
       "_origin": "ast",
       "id": "model_selection_rationale_143",
-      "community": 2,
-      "community_name": "baseline.py",
+      "community": 1,
+      "community_name": "main.py",
       "norm_label": "apply all three screens to one target. returns a summary dict."
     },
     {
@@ -4082,8 +4346,8 @@
       "source_location": "L213",
       "_origin": "ast",
       "id": "pipeline_clean_hampel_scores",
-      "community": 0,
-      "community_name": "get_int",
+      "community": 8,
+      "community_name": "clean.py",
       "norm_label": "_hampel_scores()"
     },
     {
@@ -4093,8 +4357,8 @@
       "source_location": "L224",
       "_origin": "ast",
       "id": "pipeline_clean_flag_outliers",
-      "community": 0,
-      "community_name": "get_int",
+      "community": 8,
+      "community_name": "clean.py",
       "norm_label": "flag_outliers()"
     },
     {
@@ -4104,8 +4368,8 @@
       "source_location": "L252",
       "_origin": "ast",
       "id": "pipeline_clean_repair_outliers",
-      "community": 0,
-      "community_name": "get_int",
+      "community": 8,
+      "community_name": "clean.py",
       "norm_label": "repair_outliers()"
     },
     {
@@ -4225,8 +4489,8 @@
       "source_location": "L214",
       "_origin": "ast",
       "id": "pipeline_clean_rationale_214",
-      "community": 0,
-      "community_name": "get_int",
+      "community": 8,
+      "community_name": "clean.py",
       "norm_label": "modified z-score against a rolling median. robust to the outliers     it is look"
     },
     {
@@ -4236,8 +4500,8 @@
       "source_location": "L225",
       "_origin": "ast",
       "id": "pipeline_clean_rationale_225",
-      "community": 0,
-      "community_name": "get_int",
+      "community": 8,
+      "community_name": "clean.py",
       "norm_label": "mark statistically extreme points. does not alter any value."
     },
     {
@@ -4247,8 +4511,8 @@
       "source_location": "L253",
       "_origin": "ast",
       "id": "pipeline_clean_rationale_253",
-      "community": 0,
-      "community_name": "get_int",
+      "community": 8,
+      "community_name": "clean.py",
       "norm_label": "act on the flags. default `flag_only` deliberately changes nothing."
     },
     {
@@ -4511,8 +4775,8 @@
       "source_location": "L96",
       "_origin": "ast",
       "id": "pipeline_etl_latest_run",
-      "community": 4,
-      "community_name": "sources.py",
+      "community": 6,
+      "community_name": "execute_query",
       "norm_label": "latest_run()"
     },
     {
@@ -4522,8 +4786,8 @@
       "source_location": "L109",
       "_origin": "ast",
       "id": "pipeline_etl_run_history",
-      "community": 1,
-      "community_name": "main.py",
+      "community": 14,
+      "community_name": "app.py",
       "norm_label": "run_history()"
     },
     {
@@ -4566,8 +4830,8 @@
       "source_location": "L206",
       "_origin": "ast",
       "id": "pipeline_etl_read_clean",
-      "community": 4,
-      "community_name": "sources.py",
+      "community": 6,
+      "community_name": "execute_query",
       "norm_label": "read_clean()"
     },
     {
@@ -4676,8 +4940,8 @@
       "source_location": "L207",
       "_origin": "ast",
       "id": "pipeline_etl_rationale_207",
-      "community": 4,
-      "community_name": "sources.py",
+      "community": 6,
+      "community_name": "execute_query",
       "norm_label": "read a cleaned run back as a dataframe. defaults to the latest."
     },
     {
@@ -4885,7 +5149,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pipeline_sources",
-      "community": 52,
+      "community": 4,
       "community_name": "sources.py",
       "norm_label": "sources.py"
     },
@@ -5072,7 +5336,7 @@
       "source_location": "L181",
       "_origin": "ast",
       "id": "pipeline_sources_csvsource",
-      "community": 52,
+      "community": 4,
       "community_name": "sources.py",
       "norm_label": "csvsource"
     },
@@ -5083,7 +5347,7 @@
       "source_location": "L184",
       "_origin": "ast",
       "id": "pipeline_sources_csvsource_init",
-      "community": 52,
+      "community": 4,
       "community_name": "sources.py",
       "norm_label": ".__init__()"
     },
@@ -5105,7 +5369,7 @@
       "source_location": "L192",
       "_origin": "ast",
       "id": "pipeline_sources_csvsource_describe",
-      "community": 52,
+      "community": 4,
       "community_name": "sources.py",
       "norm_label": ".describe()"
     },
@@ -5160,7 +5424,7 @@
       "source_location": "L243",
       "_origin": "ast",
       "id": "pipeline_sources_get_source",
-      "community": 52,
+      "community": 4,
       "community_name": "sources.py",
       "norm_label": "get_source()"
     },
@@ -5182,8 +5446,8 @@
       "source_location": "L286",
       "_origin": "ast",
       "id": "pipeline_sources_describe_available",
-      "community": 1,
-      "community_name": "main.py",
+      "community": 4,
+      "community_name": "sources.py",
       "norm_label": "describe_available()"
     },
     {
@@ -5204,7 +5468,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pipeline_sources_rationale_1",
-      "community": 52,
+      "community": 4,
       "community_name": "sources.py",
       "norm_label": "stage 1 \u2014 data sources.  everything downstream reads through the `source` interf"
     },
@@ -5292,7 +5556,7 @@
       "source_location": "L244",
       "_origin": "ast",
       "id": "pipeline_sources_rationale_244",
-      "community": 52,
+      "community": 4,
       "community_name": "sources.py",
       "norm_label": "build a source from a uri-style spec.          get_source(\"sqlite://\")         g"
     },
@@ -5314,8 +5578,8 @@
       "source_location": "L287",
       "_origin": "ast",
       "id": "pipeline_sources_rationale_287",
-      "community": 1,
-      "community_name": "main.py",
+      "community": 4,
+      "community_name": "sources.py",
       "norm_label": "what each connector can currently see. used by the pipeline report."
     },
     {
@@ -5358,8 +5622,8 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "pipeline_transform_label_regimes",
-      "community": 20,
-      "community_name": "get_json",
+      "community": 16,
+      "community_name": "transform.py",
       "norm_label": "label_regimes()"
     },
     {
@@ -5446,8 +5710,8 @@
       "source_location": "L99",
       "_origin": "ast",
       "id": "pipeline_transform_rationale_99",
-      "community": 20,
-      "community_name": "get_json",
+      "community": 16,
+      "community_name": "transform.py",
       "norm_label": "tag each row idle / ramp / saturated using bounds from config.      error is n"
     },
     {
@@ -5578,8 +5842,8 @@
       "source_location": "L315",
       "_origin": "ast",
       "id": "pipeline_validate_persist",
-      "community": 7,
-      "community_name": "etl.py",
+      "community": 11,
+      "community_name": "validate.py",
       "norm_label": "persist()"
     },
     {
@@ -5589,8 +5853,8 @@
       "source_location": "L335",
       "_origin": "ast",
       "id": "pipeline_validate_history",
-      "community": 22,
-      "community_name": "execute_query",
+      "community": 11,
+      "community_name": "validate.py",
       "norm_label": "history()"
     },
     {
@@ -5666,8 +5930,8 @@
       "source_location": "L336",
       "_origin": "ast",
       "id": "pipeline_validate_rationale_336",
-      "community": 22,
-      "community_name": "execute_query",
+      "community": 11,
+      "community_name": "validate.py",
       "norm_label": "past gate results, for the data-health dashboard."
     },
     {
@@ -6004,8 +6268,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "service_process_alert",
-      "community": 56,
-      "community_name": "get_online_features",
+      "community": 6,
+      "community_name": "execute_query",
       "norm_label": "process_alert.py"
     },
     {
@@ -6015,8 +6279,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "service_process_alert_check",
-      "community": 56,
-      "community_name": "get_online_features",
+      "community": 6,
+      "community_name": "execute_query",
       "norm_label": "check()"
     },
     {
@@ -6026,8 +6290,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "service_process_alert_rationale_10",
-      "community": 56,
-      "community_name": "get_online_features",
+      "community": 6,
+      "community_name": "execute_query",
       "norm_label": "verify live memory usage against threshold and log top memory processes if cross"
     },
     {
@@ -6059,8 +6323,8 @@
       "source_location": "L86",
       "_origin": "ast",
       "id": "service_recommender_build_recommendation",
-      "community": 1,
-      "community_name": "main.py",
+      "community": 0,
+      "community_name": "get_int",
       "norm_label": "build_recommendation()"
     },
     {
@@ -6070,8 +6334,8 @@
       "source_location": "L119",
       "_origin": "ast",
       "id": "service_recommender_persist",
-      "community": 1,
-      "community_name": "main.py",
+      "community": 0,
+      "community_name": "get_int",
       "norm_label": "_persist()"
     },
     {
@@ -6092,8 +6356,8 @@
       "source_location": "L150",
       "_origin": "ast",
       "id": "service_recommender_tradeoff_curve",
-      "community": 0,
-      "community_name": "get_int",
+      "community": 1,
+      "community_name": "main.py",
       "norm_label": "tradeoff_curve()"
     },
     {
@@ -6136,8 +6400,8 @@
       "source_location": "L87",
       "_origin": "ast",
       "id": "service_recommender_rationale_87",
-      "community": 1,
-      "community_name": "main.py",
+      "community": 0,
+      "community_name": "get_int",
       "norm_label": "allocation and cost across every resource."
     },
     {
@@ -6158,8 +6422,8 @@
       "source_location": "L151",
       "_origin": "ast",
       "id": "service_recommender_rationale_151",
-      "community": 0,
-      "community_name": "get_int",
+      "community": 1,
+      "community_name": "main.py",
       "norm_label": "cost against breach rate, with the cheapest compliant point."
     },
     {
@@ -6191,8 +6455,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "serving_drift",
-      "community": 48,
-      "community_name": "drift.py",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "drift.py"
     },
     {
@@ -6202,8 +6466,8 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "serving_drift_psi",
-      "community": 48,
-      "community_name": "drift.py",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "psi()"
     },
     {
@@ -6213,8 +6477,8 @@
       "source_location": "L101",
       "_origin": "ast",
       "id": "serving_drift_feature_drift",
-      "community": 0,
-      "community_name": "get_int",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "feature_drift()"
     },
     {
@@ -6224,8 +6488,8 @@
       "source_location": "L131",
       "_origin": "ast",
       "id": "serving_drift_categorical_drift",
-      "community": 0,
-      "community_name": "get_int",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "categorical_drift()"
     },
     {
@@ -6235,8 +6499,8 @@
       "source_location": "L182",
       "_origin": "ast",
       "id": "serving_drift_rolling_error",
-      "community": 48,
-      "community_name": "drift.py",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "rolling_error()"
     },
     {
@@ -6246,8 +6510,8 @@
       "source_location": "L197",
       "_origin": "ast",
       "id": "serving_drift_reference_error",
-      "community": 48,
-      "community_name": "drift.py",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "reference_error()"
     },
     {
@@ -6257,8 +6521,8 @@
       "source_location": "L205",
       "_origin": "ast",
       "id": "serving_drift_check",
-      "community": 0,
-      "community_name": "get_int",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "check()"
     },
     {
@@ -6268,8 +6532,8 @@
       "source_location": "L321",
       "_origin": "ast",
       "id": "serving_drift_record_event",
-      "community": 48,
-      "community_name": "drift.py",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "record_event()"
     },
     {
@@ -6279,8 +6543,8 @@
       "source_location": "L342",
       "_origin": "ast",
       "id": "serving_drift_update_event_outcome",
-      "community": 59,
-      "community_name": "retrain",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "update_event_outcome()"
     },
     {
@@ -6290,8 +6554,8 @@
       "source_location": "L364",
       "_origin": "ast",
       "id": "serving_drift_seconds_since_last_retrain",
-      "community": 58,
-      "community_name": "in_cooldown",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "seconds_since_last_retrain()"
     },
     {
@@ -6301,8 +6565,8 @@
       "source_location": "L386",
       "_origin": "ast",
       "id": "serving_drift_in_cooldown",
-      "community": 58,
-      "community_name": "in_cooldown",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "in_cooldown()"
     },
     {
@@ -6312,8 +6576,8 @@
       "source_location": "L398",
       "_origin": "ast",
       "id": "serving_drift_events",
-      "community": 48,
-      "community_name": "drift.py",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "events()"
     },
     {
@@ -6334,8 +6598,8 @@
       "source_location": "L471",
       "_origin": "ast",
       "id": "serving_drift_retrain",
-      "community": 59,
-      "community_name": "retrain",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "retrain()"
     },
     {
@@ -6356,8 +6620,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "serving_drift_rationale_1",
-      "community": 48,
-      "community_name": "drift.py",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "drift detection and automatic retraining.  this is the \"continuously analyses\" c"
     },
     {
@@ -6367,8 +6631,8 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "serving_drift_rationale_68",
-      "community": 48,
-      "community_name": "drift.py",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "population stability index between two distributions.      conventional reading:"
     },
     {
@@ -6378,8 +6642,8 @@
       "source_location": "L102",
       "_origin": "ast",
       "id": "serving_drift_rationale_102",
-      "community": 0,
-      "community_name": "get_int",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "psi between the earlier and most recent portions of the series."
     },
     {
@@ -6389,8 +6653,8 @@
       "source_location": "L132",
       "_origin": "ast",
       "id": "serving_drift_rationale_132",
-      "community": 0,
-      "community_name": "get_int",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "psi between the earlier and recent category shares of `column`.      uses `pipel"
     },
     {
@@ -6400,8 +6664,8 @@
       "source_location": "L183",
       "_origin": "ast",
       "id": "serving_drift_rationale_183",
-      "community": 48,
-      "community_name": "drift.py",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "mean absolute error over the most recent scored predictions."
     },
     {
@@ -6411,8 +6675,8 @@
       "source_location": "L198",
       "_origin": "ast",
       "id": "serving_drift_rationale_198",
-      "community": 48,
-      "community_name": "drift.py",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "the error the champion recorded when it was promoted."
     },
     {
@@ -6422,8 +6686,8 @@
       "source_location": "L206",
       "_origin": "ast",
       "id": "serving_drift_rationale_206",
-      "community": 0,
-      "community_name": "get_int",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "decide whether `target` has drifted, and on which signal.      evaluates all thr"
     },
     {
@@ -6433,8 +6697,8 @@
       "source_location": "L322",
       "_origin": "ast",
       "id": "serving_drift_rationale_322",
-      "community": 48,
-      "community_name": "drift.py",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "write one drift event and return its id, so the outcome of any     retrain it tr"
     },
     {
@@ -6444,8 +6708,8 @@
       "source_location": "L344",
       "_origin": "ast",
       "id": "serving_drift_rationale_344",
-      "community": 59,
-      "community_name": "retrain",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "record what a triggered retrain actually produced.      `action` said what the m"
     },
     {
@@ -6455,8 +6719,8 @@
       "source_location": "L365",
       "_origin": "ast",
       "id": "serving_drift_rationale_365",
-      "community": 58,
-      "community_name": "in_cooldown",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "seconds since this target last actually retrained, or none.      'retrained' mea"
     },
     {
@@ -6466,8 +6730,8 @@
       "source_location": "L387",
       "_origin": "ast",
       "id": "serving_drift_rationale_387",
-      "community": 58,
-      "community_name": "in_cooldown",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "whether `target` retrained too recently to retrain again."
     },
     {
@@ -6488,8 +6752,8 @@
       "source_location": "L472",
       "_origin": "ast",
       "id": "serving_drift_rationale_472",
-      "community": 59,
-      "community_name": "retrain",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "retrain each drifted target, re-gate, and write the gate's verdict     back onto"
     },
     {
@@ -6543,8 +6807,8 @@
       "source_location": "L169",
       "_origin": "ast",
       "id": "serving_predictor_forecast_horizon",
-      "community": 51,
-      "community_name": "forecast_horizon",
+      "community": 45,
+      "community_name": "predictor.py",
       "norm_label": "forecast_horizon()"
     },
     {
@@ -6587,8 +6851,8 @@
       "source_location": "L388",
       "_origin": "ast",
       "id": "serving_predictor_backfill_all",
-      "community": 45,
-      "community_name": "predictor.py",
+      "community": 1,
+      "community_name": "main.py",
       "norm_label": "backfill_all()"
     },
     {
@@ -6598,8 +6862,8 @@
       "source_location": "L397",
       "_origin": "ast",
       "id": "serving_predictor_recent_predictions",
-      "community": 48,
-      "community_name": "drift.py",
+      "community": 47,
+      "community_name": "tuning.py",
       "norm_label": "recent_predictions()"
     },
     {
@@ -6664,8 +6928,8 @@
       "source_location": "L170",
       "_origin": "ast",
       "id": "serving_predictor_rationale_170",
-      "community": 51,
-      "community_name": "forecast_horizon",
+      "community": 45,
+      "community_name": "predictor.py",
       "norm_label": "iterative multi-step forecast. returns a trajectory dataframe.      each step"
     },
     {
@@ -6763,7 +7027,7 @@
       "source_location": "L143",
       "_origin": "ast",
       "id": "tracking_lineage_config_at",
-      "community": 22,
+      "community": 6,
       "community_name": "execute_query",
       "norm_label": "config_at()"
     },
@@ -6829,7 +7093,7 @@
       "source_location": "L144",
       "_origin": "ast",
       "id": "tracking_lineage_rationale_144",
-      "community": 22,
+      "community": 6,
       "community_name": "execute_query",
       "norm_label": "which config values a fingerprint corresponded to.      reconstructed from `conf"
     },
@@ -6917,8 +7181,8 @@
       "source_location": "L253",
       "_origin": "ast",
       "id": "tracking_mlflow_tracker_current_champion",
-      "community": 57,
-      "community_name": "evaluate",
+      "community": 9,
+      "community_name": "drift.py",
       "norm_label": "current_champion()"
     },
     {
@@ -6928,8 +7192,8 @@
       "source_location": "L270",
       "_origin": "ast",
       "id": "tracking_mlflow_tracker_evaluate",
-      "community": 57,
-      "community_name": "evaluate",
+      "community": 9,
+      "community_name": "drift.py",
       "norm_label": "evaluate()"
     },
     {
@@ -6939,8 +7203,8 @@
       "source_location": "L412",
       "_origin": "ast",
       "id": "tracking_mlflow_tracker_promote",
-      "community": 22,
-      "community_name": "execute_query",
+      "community": 9,
+      "community_name": "drift.py",
       "norm_label": "promote()"
     },
     {
@@ -6950,8 +7214,8 @@
       "source_location": "L425",
       "_origin": "ast",
       "id": "tracking_mlflow_tracker_record_rejection",
-      "community": 22,
-      "community_name": "execute_query",
+      "community": 9,
+      "community_name": "drift.py",
       "norm_label": "record_rejection()"
     },
     {
@@ -6961,8 +7225,8 @@
       "source_location": "L436",
       "_origin": "ast",
       "id": "tracking_mlflow_tracker_promote_baseline",
-      "community": 1,
-      "community_name": "main.py",
+      "community": 9,
+      "community_name": "drift.py",
       "norm_label": "promote_baseline()"
     },
     {
@@ -6972,8 +7236,8 @@
       "source_location": "L474",
       "_origin": "ast",
       "id": "tracking_mlflow_tracker_run_gate",
-      "community": 1,
-      "community_name": "main.py",
+      "community": 9,
+      "community_name": "drift.py",
       "norm_label": "run_gate()"
     },
     {
@@ -7082,8 +7346,8 @@
       "source_location": "L271",
       "_origin": "ast",
       "id": "tracking_mlflow_tracker_rationale_271",
-      "community": 57,
-      "community_name": "evaluate",
+      "community": 9,
+      "community_name": "drift.py",
       "norm_label": "decide whether `result` should be promoted. returns a decision dict."
     },
     {
@@ -7093,8 +7357,8 @@
       "source_location": "L413",
       "_origin": "ast",
       "id": "tracking_mlflow_tracker_rationale_413",
-      "community": 22,
-      "community_name": "execute_query",
+      "community": 9,
+      "community_name": "drift.py",
       "norm_label": "make `model_id` the champion for `target`, demoting any incumbent."
     },
     {
@@ -7104,8 +7368,8 @@
       "source_location": "L437",
       "_origin": "ast",
       "id": "tracking_mlflow_tracker_rationale_437",
-      "community": 1,
-      "community_name": "main.py",
+      "community": 9,
+      "community_name": "drift.py",
       "norm_label": "register persistence as the champion when no model earns the slot.      producti"
     },
     {
@@ -7115,8 +7379,8 @@
       "source_location": "L475",
       "_origin": "ast",
       "id": "tracking_mlflow_tracker_rationale_475",
-      "community": 1,
-      "community_name": "main.py",
+      "community": 9,
+      "community_name": "drift.py",
       "norm_label": "log and gate every training result. returns per-target decisions."
     },
     {
@@ -7642,9 +7906,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 53,
       "norm_label": "walk-forward backtest replay",
-      "community_name": "sources.py",
+      "community_name": "Promotion Gate",
       "id": "claudemd_backtest_replay"
     },
     {
@@ -7656,9 +7920,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 53,
       "norm_label": "allocation safety floor",
-      "community_name": "sources.py",
+      "community_name": "Promotion Gate",
       "id": "claudemd_safety_floor"
     },
     {
@@ -7670,9 +7934,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 53,
       "norm_label": "the measured sla-compliant saving is 2.52%",
-      "community_name": "sources.py",
+      "community_name": "Promotion Gate",
       "id": "claudemd_measured_saving_claim"
     },
     {
@@ -7684,9 +7948,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 54,
+      "community": 5,
       "norm_label": "full prediction lineage",
-      "community_name": "fingerprint",
+      "community_name": "config.py",
       "id": "claudemd_full_lineage"
     },
     {
@@ -7810,9 +8074,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 21,
+      "community": 5,
       "norm_label": "feature selection cost accuracy",
-      "community_name": "config_crud.py",
+      "community_name": "config.py",
       "id": "readme_selection_cost_accuracy"
     },
     {
@@ -7866,9 +8130,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 53,
       "norm_label": "known limits",
-      "community_name": "sources.py",
+      "community_name": "Promotion Gate",
       "id": "readme_known_limits"
     },
     {
@@ -7978,9 +8242,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 46,
       "norm_label": "read interval at call time, not as a default argument",
-      "community_name": "config.py",
+      "community_name": "run_logger",
       "id": "collector_psutil_logger_interval_at_call_time"
     },
     {
@@ -7992,9 +8256,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 53,
       "norm_label": "csv round trip (export then replay via csv:// source)",
-      "community_name": "sources.py",
+      "community_name": "Promotion Gate",
       "id": "conversion_csv_export_round_trip"
     },
     {
@@ -8006,9 +8270,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 21,
+      "community": 5,
       "norm_label": "config_history audit trail",
-      "community_name": "config_crud.py",
+      "community_name": "config.py",
       "id": "crud_config_crud_history_audit"
     },
     {
@@ -8076,9 +8340,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 53,
       "norm_label": "schema.tables \u2014 every table definition",
-      "community_name": "sources.py",
+      "community_name": "Promotion Gate",
       "id": "database_schema_tables"
     },
     {
@@ -8104,9 +8368,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 50,
+      "community": 46,
       "norm_label": "schema.schema_contract_rows \u2014 column contract",
-      "community_name": "init_db",
+      "community_name": "run_logger",
       "id": "database_schema_contract_rows"
     },
     {
@@ -8146,9 +8410,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 53,
       "norm_label": "no fk constraints, deliberately (partial runs still record)",
-      "community_name": "sources.py",
+      "community_name": "Promotion Gate",
       "id": "database_schema_no_foreign_keys"
     },
     {
@@ -8160,9 +8424,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 53,
       "norm_label": "derived columns are not persisted in metrics_clean",
-      "community_name": "sources.py",
+      "community_name": "Promotion Gate",
       "id": "database_schema_derived_columns_not_persisted"
     },
     {
@@ -8174,9 +8438,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 50,
+      "community": 46,
       "norm_label": "metrics.id declared nullable for non-sqlite sources",
-      "community_name": "init_db",
+      "community_name": "run_logger",
       "id": "database_schema_id_nullable_contract"
     },
     {
@@ -8300,9 +8564,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 8,
       "norm_label": "regrid buckets rather than reindex-matching",
-      "community_name": "etl.py",
+      "community_name": "clean.py",
       "id": "pipeline_clean_bucket_not_match_rationale"
     },
     {
@@ -8314,9 +8578,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 44,
       "norm_label": "stage 6 transformation is not stage 9 scaling",
-      "community_name": "baseline.py",
+      "community_name": "forecast.py",
       "id": "pipeline_transform_vs_scaling_rationale"
     },
     {
@@ -8384,9 +8648,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 47,
       "norm_label": "permutation importance over built-in importances",
-      "community_name": "baseline.py",
+      "community_name": "tuning.py",
       "id": "model_selection_permutation_rationale"
     },
     {
@@ -8398,9 +8662,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 44,
       "norm_label": "a scaler fitted on all rows leaks the test window",
-      "community_name": "baseline.py",
+      "community_name": "forecast.py",
       "id": "model_scaling_leak_rationale"
     },
     {
@@ -8412,9 +8676,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 44,
+      "community": 2,
       "norm_label": "online store (refresh_online / get_online_features)",
-      "community_name": "forecast.py",
+      "community_name": "baseline.py",
       "id": "model_feature_store_online"
     },
     {
@@ -8539,9 +8803,9 @@
       "author": null,
       "contributor": null,
       "rationale": "A challenger is promoted only if it beats the strongest baseline on the same test window, survives rolling-origin CV (min_cv_folds_won), keeps fold-to-fold spread within max_cv_std_ratio of the baseline, and improves on the incumbent by min_improvement_pct. Rejecting is the gate working, not failing: a model worse than a trivial rule must not serve traffic, and churning the champion on noise is worse than leaving it alone.",
-      "community": 1,
+      "community": 0,
       "norm_label": "promotion gate",
-      "community_name": "main.py",
+      "community_name": "get_int",
       "id": "tracking_mlflow_tracker_promotion_gate"
     },
     {
@@ -8553,9 +8817,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 57,
+      "community": 9,
       "norm_label": "baseline_prefix marker",
-      "community_name": "evaluate",
+      "community_name": "drift.py",
       "id": "tracking_mlflow_tracker_baseline_prefix"
     },
     {
@@ -8568,9 +8832,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Comparing a challenger against a champion's STORED MAE compares across datasets: a model scoring 4.998 was rejected against a champion measured 4.726 on an older, easier window. Incumbents are now re-scored on this run's test window (champion_mae_same_window), with the stored figure as a flagged fallback.",
-      "community": 57,
+      "community": 9,
       "norm_label": "same-window champion re-scoring",
-      "community_name": "evaluate",
+      "community_name": "drift.py",
       "id": "tracking_mlflow_tracker_same_window_rescore"
     },
     {
@@ -8643,9 +8907,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Performance drift is what matters but needs labels, arriving a horizon late and never at all if the collector stops. Feature drift (PSI) is label-free and immediate but a shifted input distribution does not always hurt accuracy. Performance drift decides; feature drift is the early warning.",
-      "community": 0,
+      "community": 47,
       "norm_label": "two independent drift signals",
-      "community_name": "get_int",
+      "community_name": "tuning.py",
       "id": "serving_drift_two_signals"
     },
     {
@@ -8672,9 +8936,9 @@
       "author": null,
       "contributor": null,
       "rationale": "A snapshot answers 'what would we allocate now' but not 'what would this policy have cost over an hour and how often would it have failed'. Only replay can, and replay is the difference between a projected saving and a measured one. At each step the policy sees ONLY prior rows, then is charged for the following horizon.",
-      "community": 1,
+      "community": 0,
       "norm_label": "walk-forward replay",
-      "community_name": "main.py",
+      "community_name": "get_int",
       "id": "evaluation_backtest_walk_forward"
     },
     {
@@ -8687,9 +8951,9 @@
       "author": null,
       "contributor": null,
       "rationale": "A single recommendation is one instant; the backtest replays the same policy across the series. On this data the two disagree and the replay is the number to trust, so print_report and the dashboard Overview state both rather than hiding the difference.",
-      "community": 1,
+      "community": 0,
       "norm_label": "snapshot vs replay disclosure",
-      "community_name": "main.py",
+      "community_name": "get_int",
       "id": "service_recommender_snapshot_vs_replay"
     },
     {
@@ -9724,7 +9988,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L37",
+      "source_location": "L42",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -11331,7 +11595,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "dashboard/app.py",
-      "source_location": "L218",
+      "source_location": "L229",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app_targets",
@@ -12388,7 +12652,7 @@
       "context": "submodule_import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L1219",
+      "source_location": "L1155",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -13164,7 +13428,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L38",
+      "source_location": "L43",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -13365,7 +13629,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L38",
+      "source_location": "L43",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -13378,7 +13642,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "dashboard/app.py",
-      "source_location": "L213",
+      "source_location": "L224",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app_event_log",
@@ -13390,7 +13654,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "dashboard/app.py",
-      "source_location": "L127",
+      "source_location": "L138",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app_latest_process_alerts",
@@ -13402,7 +13666,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "dashboard/app.py",
-      "source_location": "L76",
+      "source_location": "L87",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app_quality_checks",
@@ -14286,7 +14550,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L102",
+      "source_location": "L113",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14297,7 +14561,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L95",
+      "source_location": "L106",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14308,7 +14572,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L51",
+      "source_location": "L62",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14319,18 +14583,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L1018",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "dashboard_app",
-      "target": "dashboard_app_colour",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "dashboard/app.py",
-      "source_location": "L212",
+      "source_location": "L223",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14341,7 +14594,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L561",
+      "source_location": "L662",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14352,7 +14605,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L971",
+      "source_location": "L869",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14363,7 +14616,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L110",
+      "source_location": "L121",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14374,7 +14627,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L126",
+      "source_location": "L137",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14385,7 +14638,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L58",
+      "source_location": "L69",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14396,7 +14649,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L75",
+      "source_location": "L86",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14407,7 +14660,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L84",
+      "source_location": "L95",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14418,7 +14671,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L65",
+      "source_location": "L76",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14429,7 +14682,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L217",
+      "source_location": "L228",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14441,7 +14694,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L39",
+      "source_location": "L45",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14453,7 +14706,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L39",
+      "source_location": "L45",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14465,7 +14718,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L39",
+      "source_location": "L45",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14473,11 +14726,23 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "submodule_import",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/app.py",
+      "source_location": "L44",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_app",
+      "target": "dashboard_theme",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L564",
+      "source_location": "L665",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14489,7 +14754,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L103",
+      "source_location": "L114",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14501,7 +14766,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L103",
+      "source_location": "L114",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14513,7 +14778,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L111",
+      "source_location": "L122",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14525,7 +14790,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L112",
+      "source_location": "L123",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14537,7 +14802,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L112",
+      "source_location": "L123",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14549,7 +14814,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L1040",
+      "source_location": "L939",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14561,7 +14826,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L1040",
+      "source_location": "L939",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14573,7 +14838,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L59",
+      "source_location": "L70",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14585,7 +14850,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L52",
+      "source_location": "L63",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14597,7 +14862,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L66",
+      "source_location": "L77",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14609,7 +14874,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L1026",
+      "source_location": "L925",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14621,7 +14886,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L1026",
+      "source_location": "L925",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14633,7 +14898,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L1166",
+      "source_location": "L1078",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14645,7 +14910,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L314",
+      "source_location": "L363",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14657,7 +14922,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L458",
+      "source_location": "L526",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14669,7 +14934,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L1166",
+      "source_location": "L1078",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14681,7 +14946,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L1107",
+      "source_location": "L1010",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14693,7 +14958,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L1107",
+      "source_location": "L1010",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14705,7 +14970,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L1116",
+      "source_location": "L1019",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14717,7 +14982,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L403",
+      "source_location": "L460",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14729,7 +14994,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L1116",
+      "source_location": "L1019",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14741,7 +15006,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L457",
+      "source_location": "L525",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14753,7 +15018,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L1190",
+      "source_location": "L1120",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14765,7 +15030,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L96",
+      "source_location": "L107",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14777,7 +15042,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L1190",
+      "source_location": "L1120",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14789,7 +15054,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L85",
+      "source_location": "L96",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app",
@@ -14813,7 +15078,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "dashboard/app.py",
-      "source_location": "L54",
+      "source_location": "L65",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app_clean_frame",
@@ -14825,7 +15090,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "dashboard/app.py",
-      "source_location": "L106",
+      "source_location": "L117",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app_backtest",
@@ -14837,7 +15102,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "dashboard/app.py",
-      "source_location": "L105",
+      "source_location": "L116",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app_backtest",
@@ -14849,7 +15114,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "dashboard/app.py",
-      "source_location": "L120",
+      "source_location": "L131",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app_ladder",
@@ -14861,7 +15126,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "dashboard/app.py",
-      "source_location": "L115",
+      "source_location": "L126",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app_ladder",
@@ -14873,7 +15138,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "dashboard/app.py",
-      "source_location": "L118",
+      "source_location": "L129",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app_ladder",
@@ -14885,7 +15150,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "dashboard/app.py",
-      "source_location": "L566",
+      "source_location": "L666",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_app_get_current_usage",
@@ -14895,10 +15160,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/app.py",
-      "source_location": "L562",
+      "source_location": "L663",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "dashboard_app_rationale_562",
+      "source": "dashboard_app_rationale_663",
       "target": "dashboard_app_get_current_usage",
       "confidence_score": 1.0
     },
@@ -14961,7 +15226,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/auth.py",
-      "source_location": "L158",
+      "source_location": "L176",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_auth",
@@ -14972,7 +15237,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/auth.py",
-      "source_location": "L132",
+      "source_location": "L133",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_auth",
@@ -14991,6 +15256,18 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "submodule_import",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/auth.py",
+      "source_location": "L144",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_auth",
+      "target": "dashboard_theme",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/auth.py",
@@ -15006,7 +15283,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/auth.py",
-      "source_location": "L159",
+      "source_location": "L177",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_auth_logout",
@@ -15029,7 +15306,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/auth.py",
-      "source_location": "L140",
+      "source_location": "L147",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_auth_require_login",
@@ -15064,7 +15341,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/auth.py",
-      "source_location": "L124",
+      "source_location": "L125",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_auth_login_form",
@@ -15076,7 +15353,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/auth.py",
-      "source_location": "L151",
+      "source_location": "L169",
       "weight": 1.0,
       "_origin": "ast",
       "source": "dashboard_auth_require_login",
@@ -15087,11 +15364,299 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "dashboard/auth.py",
-      "source_location": "L133",
+      "source_location": "L134",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "dashboard_auth_rationale_133",
+      "source": "dashboard_auth_rationale_134",
       "target": "dashboard_auth_require_login",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "dashboard/auth.py",
+      "source_location": "L145",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_auth_require_login",
+      "target": "dashboard_theme_apply"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L380",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme",
+      "target": "dashboard_theme_apply",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L457",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme",
+      "target": "dashboard_theme_bullet",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L441",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme",
+      "target": "dashboard_theme_kv",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L448",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme",
+      "target": "dashboard_theme_legend",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L408",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme",
+      "target": "dashboard_theme_note",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L388",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme",
+      "target": "dashboard_theme_page",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L413",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme",
+      "target": "dashboard_theme_rule",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L396",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme",
+      "target": "dashboard_theme_section",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L74",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme",
+      "target": "dashboard_theme_series",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L512",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme",
+      "target": "dashboard_theme_status_frame",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L429",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme",
+      "target": "dashboard_theme_status_tag",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L401",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme",
+      "target": "dashboard_theme_sub",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme_rationale_1",
+      "target": "dashboard_theme",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L75",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme_rationale_75",
+      "target": "dashboard_theme_series",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L381",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme_rationale_381",
+      "target": "dashboard_theme_apply",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L528",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme_status_frame",
+      "target": "dashboard_theme_apply",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L389",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme_rationale_389",
+      "target": "dashboard_theme_page",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L397",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme_rationale_397",
+      "target": "dashboard_theme_section",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L402",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme_rationale_402",
+      "target": "dashboard_theme_sub",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L409",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme_rationale_409",
+      "target": "dashboard_theme_note",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L430",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme_rationale_430",
+      "target": "dashboard_theme_status_tag",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L442",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme_rationale_442",
+      "target": "dashboard_theme_kv",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L449",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme_rationale_449",
+      "target": "dashboard_theme_legend",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L458",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme_rationale_458",
+      "target": "dashboard_theme_bullet",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/theme.py",
+      "source_location": "L513",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "dashboard_theme_rationale_513",
+      "target": "dashboard_theme_status_frame",
       "confidence_score": 1.0
     },
     {
@@ -29573,5 +30138,5 @@
       "source_file": "service/recommender.py"
     }
   ],
-  "built_at_commit": "e811e150c1c0d1d1e187be19c03d8bc1c20fd830"
+  "built_at_commit": "25c9a7811c901bf0bdee5918c3e5683b5f937255"
 }

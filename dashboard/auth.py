@@ -118,7 +118,8 @@ def _login_form(client, role):
         password = st.text_input(
             "Password", type="password", key=f"password_{role}"
         )
-        submitted = st.form_submit_button("Sign in")
+        submitted = st.form_submit_button("Sign in", type="primary",
+                                          width="stretch")
 
     if submitted:
         user, error = _sign_in(client, email, password, role)
@@ -137,6 +138,12 @@ def require_login():
     if "auth_user" in st.session_state:
         return st.session_state["auth_user"]
 
+    # app.py styles the page before calling this, but the sign-in screen
+    # must not depend on that ordering — a duplicate <style> block is
+    # harmless, an unstyled login page is not.
+    from dashboard import theme
+    theme.apply()
+
     client = _client()
     if client is None:
         st.error(
@@ -145,12 +152,23 @@ def require_login():
         )
         st.stop()
 
-    st.title("Predictive Resource Monitor")
-    tab_customer, tab_admin = st.tabs(["Customer Login", "Admin Login"])
-    with tab_customer:
-        _login_form(client, "customer")
-    with tab_admin:
-        _login_form(client, "admin")
+    # A narrow centred column: the sign-in screen is the only page in the
+    # app with one job, and a full-width form on a 1500px canvas reads as
+    # a broken layout rather than a deliberate one.
+    _, middle, _ = st.columns([1, 1.1, 1])
+    with middle:
+        st.markdown(
+            '<div class="rm-title" style="margin-top:3rem">'
+            'Predictive Resource Monitor</div>'
+            '<div class="rm-subtitle">Sign in to continue. Which tabs open is '
+            'decided by your account, not by the tab you use here.</div>',
+            unsafe_allow_html=True,
+        )
+        tab_customer, tab_admin = st.tabs(["Customer", "Administrator"])
+        with tab_customer:
+            _login_form(client, "customer")
+        with tab_admin:
+            _login_form(client, "admin")
 
     st.stop()
 

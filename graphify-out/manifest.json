@@ -55,8 +55,8 @@
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "dashboard/app.py": {
-    "mtime": 1785439198.772067,
-    "ast_hash": "5f636e92a322056548cb3488d63772e6",
+    "mtime": 1785442937.9960175,
+    "ast_hash": "848b268409db743dc0628be583ea3689",
     "semantic_hash": ""
   },
   "database/__init__.py": {
@@ -260,8 +260,8 @@
     "semantic_hash": ""
   },
   "dashboard/auth.py": {
-    "mtime": 1785437878.0280013,
-    "ast_hash": "0d713a9979ab385307e1cf7fc0f2f46a",
+    "mtime": 1785442895.9969468,
+    "ast_hash": "bbea800883624c880596055011b9a637",
     "semantic_hash": ""
   },
   "dashboard/sql/auth_schema.sql": {
@@ -392,6 +392,11 @@
   "k8s/overlays/qs/patch-service.yaml": {
     "mtime": 1785317755.356208,
     "ast_hash": "3abf50b654de1b2f2dd701fe2f1fd3fb",
+    "semantic_hash": ""
+  },
+  "dashboard/theme.py": {
+    "mtime": 1785442933.5651903,
+    "ast_hash": "bc03675e72d510714c9a07f0a0961c10",
     "semantic_hash": ""
   }
 }
