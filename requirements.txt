@@ -13,3 +13,10 @@ matplotlib==3.11.1
 streamlit==1.60.0
 mlflow==3.14.0
 streamlit-autorefresh==1.0.1
+supabase==2.24.0
+python-dotenv==1.1.1
+
+# Setup-only: `python -m dashboard.apply_sql` talks to Supabase's Postgres
+# directly to create the profiles table and the accounts. The dashboard
+# itself never imports this — it goes through the anon key and PostgREST.
+psycopg2-binary==2.9.12
