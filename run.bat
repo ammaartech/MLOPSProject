@@ -19,7 +19,6 @@ REM     run.bat schedule        the continuous loop (Ctrl+C to stop)
 REM     run.bat dashboard       Streamlit UI
 REM     run.bat menu            the Python menu in main.py
 REM     run.bat mlflow          MLflow tracking UI
-REM     run.bat reset-deps      force a clean dependency reinstall
 REM
 REM  Docker (no Python or venv needed — Docker Desktop must be running):
 REM     run.bat docker-build    build the image
@@ -64,7 +63,7 @@ set "ARG2=%~2"
 if "%ACTION%"=="" set "ACTION=menu-interactive"
 
 if /i "%ACTION%"=="reset-deps" (
-    if exist "%DEPS_STAMP%" del /q "%DEPS_STAMP%"
+    echo   NOTE: dependency installation is managed by Docker -- reset-deps is a no-op.
     set "ACTION=setup"
 )
 
@@ -524,22 +523,15 @@ if not exist "%VENV_PY%" (
 
 REM ================================================================
 REM  PREREQUISITE 3 — dependencies
-REM
-REM  The stamp file records that requirements.txt was installed
-REM  successfully. Deleting it (or `run.bat reset-deps`) forces a
-REM  reinstall; otherwise startup stays fast.
 REM ================================================================
 if not exist "%DEPS_STAMP%" (
     echo.
     echo [prereq] installing dependencies from requirements.txt ...
-    echo          ^(first run only — this takes a few minutes^)
     "%VENV_PY%" -m pip install --upgrade pip --quiet
     "%VENV_PY%" -m pip install -r requirements.txt
     if errorlevel 1 (
         echo.
-        echo   ERROR: dependency installation failed. Read the pip output above.
-        echo   Common cause: no internet connection, or a Python version that
-        echo   has no wheels for the pinned scikit-learn / numpy builds.
+        echo   ERROR: dependency installation failed.
         exit /b 1
     )
     echo installed > "%DEPS_STAMP%"
@@ -589,25 +581,14 @@ echo ======================================================================
 echo   PREDICTIVE RESOURCE MONITORING SYSTEM
 echo ======================================================================
 echo.
-echo   1  Collect metrics          (sample this machine)
-echo   2  Run load generator       (makes CPU forecastable)
-echo   3  Run full pipeline        (all 12 stages)
-echo   4  Drift monitor + retrain
-echo   5  Continuous scheduler
-echo   6  Dashboard (Streamlit)
-echo   7  Python menu (main.py)
-echo   8  MLflow UI
+echo   1  Data entry ^& logging (Collect metrics + Pipeline cycle)
+echo   2  Dashboard (Streamlit)
+echo.
 echo   0  Exit
 echo.
 set /p "CHOICE=Select: "
-if "%CHOICE%"=="1" goto :collect
-if "%CHOICE%"=="2" goto :load
-if "%CHOICE%"=="3" goto :pipeline
-if "%CHOICE%"=="4" goto :drift
-if "%CHOICE%"=="5" goto :schedule
-if "%CHOICE%"=="6" goto :dashboard
-if "%CHOICE%"=="7" goto :pymenu
-if "%CHOICE%"=="8" goto :mlflow
+if "%CHOICE%"=="1" goto :schedule
+if "%CHOICE%"=="2" goto :dashboard
 if "%CHOICE%"=="0" goto :done
 echo Invalid selection.
 goto :interactive
@@ -656,6 +637,61 @@ goto :done
 :mlflow
 echo Starting MLflow UI at http://localhost:5000 ...
 "%VENV_DIR%\Scripts\mlflow.exe" ui --backend-store-uri sqlite:///data/mlflow.db
+goto :done
+
+REM ----------------------------------------------------------------
+:docker_build_and_up
+docker version >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo   ERROR: Docker daemon is not running.
+    echo   Open Docker Desktop from the Start menu and wait for the whale
+    echo   icon in the system tray to stop animating, then try again.
+    goto :interactive
+)
+echo Building image...
+docker compose build
+if errorlevel 1 goto :done
+echo Starting dashboard + MLflow...
+docker compose up -d dashboard mlflow
+if errorlevel 1 goto :done
+echo.
+echo   Dashboard : http://localhost:8501
+echo   MLflow    : http://localhost:5000
+echo   Stop with : select X from this menu
+goto :done
+
+:docker_up_only
+docker version >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo   ERROR: Docker daemon is not running.
+    echo   Open Docker Desktop and wait for the whale icon to stop animating.
+    goto :interactive
+)
+docker compose up -d dashboard mlflow
+if errorlevel 1 goto :done
+echo.
+echo   Dashboard : http://localhost:8501
+echo   MLflow    : http://localhost:5000
+goto :done
+
+:docker_down_menu
+docker version >nul 2>&1
+if errorlevel 1 (
+    echo   ERROR: Docker daemon is not running.
+    goto :interactive
+)
+docker compose down
+goto :done
+
+:docker_pipeline_menu
+docker version >nul 2>&1
+if errorlevel 1 (
+    echo   ERROR: Docker daemon is not running.
+    goto :interactive
+)
+docker compose run --rm app pipeline
 goto :done
 
 REM ----------------------------------------------------------------

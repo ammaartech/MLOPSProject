@@ -294,7 +294,9 @@ TABLES = {
             monthly_cost    REAL,
             static_cost     REAL,
             breach_rate     REAL,
-            model_id        TEXT
+            model_id        TEXT,
+            type            TEXT DEFAULT 'allocation',
+            process_payload TEXT
         )
     """,
 }
@@ -332,6 +334,8 @@ COLUMN_MIGRATIONS = [
     ("drift_events", "new_model_id", "TEXT"),
     ("drift_events", "feature_version", "TEXT"),
     ("drift_events", "resolved_at", "TEXT"),
+    ("recommendations", "type", "TEXT DEFAULT 'allocation'"),
+    ("recommendations", "process_payload", "TEXT"),
 ]
 
 
@@ -575,6 +579,8 @@ DEFAULT_CONFIG = [
     # ---- allocation policy ---------------------------------------------
     ("policy.headroom", "0.20", "float", "policy",
      "Safety buffer above the forecast peak"),
+    ("policy.capacity_alert_threshold", "80.0", "float", "policy",
+     "Threshold above which capacity warning is triggered (percent)"),
     ("policy.max_breach_rate", "5.0", "float", "policy",
      "SLA: maximum % of samples allowed to exceed the allocation"),
     ("policy.safety_window", "100", "int", "policy",

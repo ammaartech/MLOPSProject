@@ -27,6 +27,7 @@ silently predicting from mismatched inputs. Training-serving skew is
 otherwise invisible: the numbers still look plausible.
 """
 
+import os
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -36,7 +37,7 @@ import config
 from crud.query import execute_query
 from model import feature_store
 from model.features import build_serving_row, load_clean_frame
-from model.forecast import load_model
+from model.forecast import load_model, model_path, MODEL_DIR
 from tracking.mlflow_tracker import BASELINE_PREFIX
 
 
@@ -55,11 +56,31 @@ def resolve_champion(target):
         (target,), fetch=True,
     )
     if not rows:
-        return None
+        return {"model_id": f"{BASELINE_PREFIX}persistence-{target}", "algorithm": "persistence", "mae": 0.0,
+                "feature_version": "v1", "promoted_at": None, "is_baseline": True}
+
     r = rows[0]
-    return {"model_id": r[0], "algorithm": r[1], "mae": r[2],
+    model_id = r[0]
+    is_baseline = str(model_id).startswith(BASELINE_PREFIX)
+
+    if not is_baseline:
+        path = model_path(model_id)
+        if not os.path.exists(path):
+            existing = []
+            if os.path.exists(MODEL_DIR):
+                existing = [f for f in os.listdir(MODEL_DIR) if f.startswith(f"{target}-") and f.endswith(".joblib")]
+            if existing:
+                existing.sort(reverse=True)
+                found_id = existing[0][:-7]
+                return {"model_id": found_id, "algorithm": r[1], "mae": r[2],
+                        "feature_version": r[3], "promoted_at": r[4], "is_baseline": False}
+            else:
+                return {"model_id": f"{BASELINE_PREFIX}persistence-{target}", "algorithm": "persistence", "mae": r[2],
+                        "feature_version": r[3], "promoted_at": r[4], "is_baseline": True}
+
+    return {"model_id": model_id, "algorithm": r[1], "mae": r[2],
             "feature_version": r[3], "promoted_at": r[4],
-            "is_baseline": str(r[0]).startswith(BASELINE_PREFIX)}
+            "is_baseline": is_baseline}
 
 
 # ----------------------------------------------------------------------
@@ -170,14 +191,21 @@ def forecast_horizon(target, steps=None, df=None):
 
     cadence = config.get_int("pipeline.nominal_cadence_sec")
     last_ts = pd.to_datetime(df["ts"].iloc[-1])
+    mae = float(champion.get("mae", 1.5) or 1.5)
 
     if champion["is_baseline"]:
         current = float(df[target].iloc[-1])
+        steps_arr = np.arange(1, steps + 1)
+        spread = 1.96 * mae * np.sqrt(steps_arr / 5.0)
+        upper = [round(float(min(100.0, current + s)), 4) for s in spread]
+        lower = [round(float(max(0.0, current - s)), 4) for s in spread]
         trajectory = pd.DataFrame({
-            "step": range(1, steps + 1),
+            "step": steps_arr,
             "ts": [last_ts + timedelta(seconds=cadence * s)
                    for s in range(1, steps + 1)],
             "predicted": [current] * steps,
+            "upper_bound": upper,
+            "lower_bound": lower,
         })
         return trajectory, {
             "model_id": champion["model_id"],
@@ -185,6 +213,7 @@ def forecast_horizon(target, steps=None, df=None):
             "horizon_seconds": steps * cadence,
             "forecast_p95": round(current, 4),
             "forecast_peak": round(current, 4),
+            "mae": mae,
         }
 
     bundle = load_model(champion["model_id"])
@@ -210,11 +239,18 @@ def forecast_horizon(target, steps=None, df=None):
     if not predictions:
         return pd.DataFrame(), {"error": "could not build a serving row"}
 
+    steps_arr = np.arange(1, len(predictions) + 1)
+    spread = 1.96 * mae * np.sqrt(steps_arr / 5.0)
+    upper = [round(float(min(100.0, val + s)), 4) for val, s in zip(predictions, spread)]
+    lower = [round(float(max(0.0, val - s)), 4) for val, s in zip(predictions, spread)]
+
     trajectory = pd.DataFrame({
-        "step": range(1, len(predictions) + 1),
+        "step": steps_arr,
         "ts": [last_ts + timedelta(seconds=cadence * s)
                for s in range(1, len(predictions) + 1)],
         "predicted": predictions,
+        "upper_bound": upper,
+        "lower_bound": lower,
     })
     return trajectory, {
         "model_id": champion["model_id"],
@@ -222,6 +258,7 @@ def forecast_horizon(target, steps=None, df=None):
         "horizon_seconds": len(predictions) * cadence,
         "forecast_p95": round(float(np.percentile(predictions, 95)), 4),
         "forecast_peak": round(float(np.max(predictions)), 4),
+        "mae": mae,
     }
 
 

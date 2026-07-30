@@ -371,3 +371,11 @@ Reference node: 8 vCPU / 32 GB RAM / 500 GB. Full provisioning is
   project currently serves one.
 - **CPU dynamics depend on the load generator.** An idle laptop produces
   a flat signal that nothing can forecast and nothing needs to.
+
+---
+
+## Recent Updates
+
+- **Dynamic Capacity Monitor**: The Capacity Dashboard has been upgraded from static renderings to a dynamic, animated interface using `streamlit-autorefresh`. It now queries the `metrics` table in real-time, displaying live CSS-animated 3D cylinders.
+- **SQL Ordering Fix**: Fixed a bug where the digital twin runs could not be read properly due to an incorrect `ORDER BY` clause.
+- **Environment Consistency**: Fixed model pickling issues by ensuring models are trained and saved using the `.venv`'s native `scikit-learn` version (`1.9.0`), solving `ModuleNotFoundError` crashes during serving.

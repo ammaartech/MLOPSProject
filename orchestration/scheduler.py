@@ -47,7 +47,7 @@ def _handle_signal(_signum, _frame):
 # ----------------------------------------------------------------------
 # Background collector
 # ----------------------------------------------------------------------
-def start_collector(interval=None, quiet=True):
+def start_collector(interval=None, quiet=False):
     """Run the psutil logger on a daemon thread."""
     from collector.psutil_logger import log_once
 
@@ -110,6 +110,13 @@ def cycle(number, drift_every=10, verbose=True):
         for target, (value, _meta) in predictions.items()
     }
     report["scored"] = score(frame)["scored"]
+
+    # --- 4b. process alerting -------------------------------------------
+    try:
+        from service import process_alert
+        process_alert.check()
+    except Exception as exc:
+        print(f"  [process_alert] Check failed: {exc}")
 
     # --- 5. drift --------------------------------------------------------
     if number % drift_every == 0:
@@ -202,7 +209,17 @@ if __name__ == "__main__":
     parser.add_argument("--drift-every", type=int, default=10)
     parser.add_argument("--with-collector", action="store_true",
                         help="run the psutil collector in this process too")
+    parser.add_argument("--with-twin", type=str, default=None,
+                        help="run a digital twin simulation for the named scenario and exit")
     args = parser.parse_args()
+
+    if args.with_twin:
+        import subprocess
+        import sys
+        cmd = [sys.executable, "-m", "orchestration.run_twin", "--scenario", args.with_twin]
+        print(f"Starting digital twin run for scenario '{args.with_twin}'...")
+        res = subprocess.run(cmd)
+        sys.exit(res.returncode)
 
     run(interval=args.interval, cycles=args.cycles,
         drift_every=args.drift_every, with_collector=args.with_collector)
