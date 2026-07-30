@@ -51,7 +51,10 @@ if [ ! -d "$VENV_DIR" ]; then
     rm -f "$DEPS_STAMP"
 fi
 
-if [ ! -f "$DEPS_STAMP" ]; then
+# A stamp older than requirements.txt means the dependency list grew since
+# the last install. Checking existence alone left every pre-existing venv
+# one package short of a requirements.txt that had gained a line.
+if [ ! -f "$DEPS_STAMP" ] || [ requirements.txt -nt "$DEPS_STAMP" ]; then
     echo "[prereq] installing dependencies..."
     "$VENV_PY" -m pip install --upgrade pip --quiet
     "$VENV_PY" -m pip install -r requirements.txt

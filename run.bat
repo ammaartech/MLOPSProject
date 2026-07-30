@@ -523,8 +523,21 @@ if not exist "%VENV_PY%" (
 
 REM ================================================================
 REM  PREREQUISITE 3 — dependencies
+REM
+REM  The stamp records requirements.txt's timestamp and size, not a bare
+REM  "installed" flag. Adding a line to requirements.txt therefore
+REM  invalidates the stamp and forces a reinstall. The flag version left
+REM  every venv created before a new dependency permanently one package
+REM  short, and the failure surfaced far from the cause — as a
+REM  ModuleNotFoundError on streamlit_autorefresh inside the dashboard.
 REM ================================================================
-if not exist "%DEPS_STAMP%" (
+set "REQ_FINGERPRINT="
+for %%F in ("requirements.txt") do set "REQ_FINGERPRINT=%%~tF %%~zF"
+
+set "DEPS_FINGERPRINT="
+if exist "%DEPS_STAMP%" set /p DEPS_FINGERPRINT=<"%DEPS_STAMP%"
+
+if not "%DEPS_FINGERPRINT%"=="%REQ_FINGERPRINT%" (
     echo.
     echo [prereq] installing dependencies from requirements.txt ...
     "%VENV_PY%" -m pip install --upgrade pip --quiet
@@ -534,7 +547,9 @@ if not exist "%DEPS_STAMP%" (
         echo   ERROR: dependency installation failed.
         exit /b 1
     )
-    echo installed > "%DEPS_STAMP%"
+    REM  Redirect first: the fingerprint ends in the byte count, and a
+    REM  digit immediately before ">" is parsed as a stream handle.
+    >"%DEPS_STAMP%" echo %REQ_FINGERPRINT%
     echo   dependencies installed.
 ) else (
     echo [prereq] dependencies already installed.
