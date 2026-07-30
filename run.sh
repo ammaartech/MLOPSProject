@@ -71,38 +71,15 @@ if [ "$ACTION" = "menu-interactive" ]; then
     echo "======================================================================"
     echo "  PREDICTIVE RESOURCE MONITORING SYSTEM (Mac/Linux)"
     echo "======================================================================"
-    echo "  --- Local (uses .venv) ---"
-    echo "  1  Collect metrics"
-    echo "  2  Run load generator"
-    echo "  3  Run full pipeline"
-    echo "  4  Drift monitor + retrain"
-    echo "  5  Continuous scheduler"
-    echo "  6  Dashboard (Streamlit)"
-    echo "  7  Python menu (main.py)"
-    echo "  8  MLflow UI"
-    echo ""
-    echo "  --- Docker ---"
-    echo "  D  Docker: build image then start dashboard + MLflow"
-    echo "  U  Docker: start dashboard + MLflow"
-    echo "  X  Docker: stop containers"
-    echo "  P  Docker: run full pipeline in container"
+    echo "  1  Data entry & logging (Collect metrics + Pipeline cycle)"
+    echo "  2  Dashboard (Streamlit)"
     echo ""
     echo "  0  Exit"
     echo ""
     read -p "Select: " CHOICE
     case "$CHOICE" in
-        1) ACTION="collect" ;;
-        2) ACTION="load" ;;
-        3) ACTION="pipeline" ;;
-        4) ACTION="drift" ;;
-        5) ACTION="schedule" ;;
-        6) ACTION="dashboard" ;;
-        7) ACTION="menu" ;;
-        8) ACTION="mlflow" ;;
-        [dD]) docker compose build && docker compose up -d dashboard mlflow; exit 0 ;;
-        [uU]) docker compose up -d dashboard mlflow; exit 0 ;;
-        [xX]) docker compose down; exit 0 ;;
-        [pP]) docker compose run --rm app pipeline; exit 0 ;;
+        1) ACTION="schedule" ;;
+        2) ACTION="dashboard" ;;
         0) exit 0 ;;
         *) echo "Invalid selection"; exit 1 ;;
     esac

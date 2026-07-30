@@ -47,7 +47,7 @@ def _handle_signal(_signum, _frame):
 # ----------------------------------------------------------------------
 # Background collector
 # ----------------------------------------------------------------------
-def start_collector(interval=None, quiet=True):
+def start_collector(interval=None, quiet=False):
     """Run the psutil logger on a daemon thread."""
     from collector.psutil_logger import log_once
 

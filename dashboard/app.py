@@ -190,8 +190,8 @@ if frame.empty:
     st.error("The latest run produced no cleaned rows.")
     st.stop()
 
-tab_overview, tab_capacity, tab_twin, tab_health, tab_model, tab_cost, tab_lineage = st.tabs([
-    "Overview", "Capacity", "🧪 Digital Twin", "Data Health", "Model", "Cost & SLA", "Lineage & Config",
+tab_overview, tab_forecast, tab_capacity, tab_twin, tab_health, tab_model, tab_cost, tab_lineage = st.tabs([
+    "Overview", "🔮 Forecast Studio", "Capacity", "🧪 Digital Twin", "Data Health", "Model", "Cost & SLA", "Lineage & Config",
 ])
 
 
@@ -199,22 +199,64 @@ tab_overview, tab_capacity, tab_twin, tab_health, tab_model, tab_cost, tab_linea
 # Overview
 # ----------------------------------------------------------------------
 with tab_overview:
-    st.header("Current state")
+    st.header("Predictive Resource Allocations & System State")
 
     from service.recommender import build_recommendation
 
     recommendation = build_recommendation(frame, persist=False)
 
+    # ------------------------------------------------------------------
+    # Prominent Recommended Allocations Header & Cards
+    # ------------------------------------------------------------------
+    st.subheader("🎯 Live Recommended Resource Allocations")
+    st.caption("Forecast-driven allocations adjusted with SLA safety floors to minimize infrastructure spend.")
+
+    rec_cols = st.columns(3)
+    res_labels = {
+        "cpu_percent": ("💻 CPU Allocation", "vCPUs"),
+        "mem_percent": ("🧠 Memory Allocation", "GB RAM"),
+        "disk_read_mb_s": ("💾 Storage I/O Allocation", "MB/s I/O"),
+    }
+
+    summary_rows = []
+    for idx, (target, r) in enumerate(recommendation["recommendations"].items()):
+        icon_title, unit_lbl = res_labels.get(target, (target, r["unit_label"]))
+        with rec_cols[idx % 3]:
+            st.metric(
+                label=icon_title,
+                value=f"{r['recommended_percent']}%",
+                delta=f"{r['units']} {r['unit_label']}",
+                delta_color="off",
+            )
+            st.caption(f"**Model**: `{r['predictor']}`")
+            st.caption(f"**Forecast**: Peak `{r['forecast_peak']}%` | P95 `{r['forecast_p95']}%`")
+            st.caption(f"**Monthly Cost**: **${r['monthly_cost']}** *(Static: ${r['static_cost']})*")
+            if r["floored"]:
+                st.caption(f"🛡️ *Safety Floor*: {r['floor_reason']}")
+            else:
+                st.caption("✅ *SLA Status*: Compliant with forecast allocation")
+
+        summary_rows.append({
+            "Resource": target,
+            "Recommended Alloc (%)": f"{r['recommended_percent']}%",
+            "Allocated Units": f"{r['units']} {r['unit_label']}",
+            "Forecast Peak": f"{r['forecast_peak']}%",
+            "Predictor": r["predictor"],
+            "Monthly Cost": f"${r['monthly_cost']}",
+            "Static Cost": f"${r['static_cost']}",
+            "SLA Safety Floor": r["floor_reason"] if r["floored"] else "Compliant",
+        })
+
+    st.dataframe(pd.DataFrame(summary_rows), width="stretch", hide_index=True)
+
+    st.markdown("---")
+
+    st.subheader("Financial Impact & System Metrics")
     columns = st.columns(4)
-    columns[0].metric("Static (100%)",
-                      f"${recommendation['static_cost']['total']}/mo")
-    columns[1].metric("Predictive allocation",
-                      f"${recommendation['predictive_cost']['total']}/mo")
-    columns[2].metric("Snapshot saving",
-                      f"${recommendation['monthly_savings']}",
-                      f"{recommendation['savings_percent']}%")
-    columns[3].metric("Samples", f"{len(frame)}",
-                      f"{frame['segment_id'].nunique()} segments")
+    columns[0].metric("Static (100%)", f"${recommendation['static_cost']['total']}/mo")
+    columns[1].metric("Predictive Allocation", f"${recommendation['predictive_cost']['total']}/mo")
+    columns[2].metric("Snapshot Saving", f"${recommendation['monthly_savings']}", f"{recommendation['savings_percent']}%")
+    columns[3].metric("Data Samples", f"{len(frame)}", f"{frame['segment_id'].nunique()} segments")
 
     st.info(
         "The snapshot saving is a single instant. The measured figure is in "
@@ -247,25 +289,147 @@ with tab_overview:
     recent = frame.tail(window)
     st.line_chart(recent.set_index("ts")[targets()])
 
-    st.subheader("Allocation vs demand")
+    st.subheader("Forecast Trajectory & Allocation vs Demand")
+    from serving.predictor import forecast_horizon
+
     for target, r in recommendation["recommendations"].items():
         left, right = st.columns([3, 2])
         with left:
-            chart = pd.DataFrame({
-                "actual": recent.set_index("ts")[target],
-                "allocated": r["recommended_percent"],
-            })
-            st.caption(f"**{target}** — {r['predictor']}")
+            trajectory, meta = forecast_horizon(target, df=frame)
+            actual_df = recent.copy()
+            actual_df["ts"] = pd.to_datetime(actual_df["ts"])
+            actual_df = actual_df.set_index("ts")[[target]].rename(columns={target: "actual"})
+            actual_df["allocated"] = r["recommended_percent"]
+
+            if not trajectory.empty:
+                traj_df = trajectory.copy()
+                traj_df["ts"] = pd.to_datetime(traj_df["ts"])
+                traj_df = traj_df.set_index("ts")[["predicted"]].rename(columns={"predicted": "forecast"})
+                last_ts = actual_df.index[-1]
+                actual_df.loc[last_ts, "forecast"] = actual_df["actual"].iloc[-1]
+                chart = pd.concat([actual_df, traj_df], axis=0)
+            else:
+                chart = actual_df
+
+            st.caption(f"**{target}** — {r['predictor']} | Peak: {r['forecast_peak']}% | P95: {r['forecast_p95']}%")
             st.line_chart(chart)
         with right:
             st.metric(f"{target} allocation",
                       f"{r['recommended_percent']}%",
                       f"{r['units']} {r['unit_label']}")
-            st.caption(f"forecast wanted {r['forecast_alloc']}%")
+            st.caption(f"🔮 **Forecast Trajectory**: peak {r['forecast_peak']}% | p95 {r['forecast_p95']}%")
+            st.caption(f"Forecast wanted {r['forecast_alloc']}%")
             if r["floored"]:
-                st.caption(f"safety floor: {r['floor_reason']}")
-            st.caption(f"breaches {r['breach_rate']}% "
+                st.caption(f"🛡️ Safety floor: {r['floor_reason']}")
+            st.caption(f"Breaches {r['breach_rate']}% "
                        f"in {r['breach_episodes']} episode(s)")
+
+
+# ----------------------------------------------------------------------
+# Forecast Studio
+# ----------------------------------------------------------------------
+with tab_forecast:
+    st.header("🔮 Forecast Studio & Multi-Step Predictor")
+    st.caption(
+        "Interactive multi-step horizon forecasting engine with expanding uncertainty bands, "
+        "model comparison, and live traffic scenario simulation."
+    )
+
+    col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([2, 2, 2])
+    with col_ctrl1:
+        fc_target = st.selectbox("Forecast Target", targets(), key="fc_studio_target")
+    with col_ctrl2:
+        fc_steps = st.slider("Forecast Horizon (steps)", 10, 100, 30, step=5, key="fc_studio_steps")
+    with col_ctrl3:
+        show_bounds = st.checkbox("Show Uncertainty Band (95% CI)", value=True, key="fc_studio_bounds")
+
+    from serving.predictor import forecast_horizon, resolve_champion
+    from service.recommender import recommend_percent
+
+    trajectory, meta = forecast_horizon(fc_target, steps=fc_steps, df=frame)
+    r = recommend_percent(fc_target, df=frame)
+
+    if not trajectory.empty:
+        cadence = config.get_int("pipeline.nominal_cadence_sec")
+        horizon_sec = len(trajectory) * cadence
+
+        # Metric Summary Bar
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Projected Peak", f"{meta['forecast_peak']}%")
+        m2.metric("Projected P95", f"{meta['forecast_p95']}%")
+        m3.metric("Forecast Window", f"{horizon_sec}s ({len(trajectory)} steps)")
+        m4.metric("Champion Model", meta["model_id"].split("-")[0], f"MAE {meta.get('mae', 0.0):.3f}")
+
+        # Main Forecast Trajectory Chart
+        recent_fc = frame.tail(window).copy()
+        recent_fc["ts"] = pd.to_datetime(recent_fc["ts"])
+        actual_chart = recent_fc.set_index("ts")[[fc_target]].rename(columns={fc_target: "Actual Demand"})
+
+        traj_chart = trajectory.copy()
+        traj_chart["ts"] = pd.to_datetime(traj_chart["ts"])
+
+        if show_bounds and "upper_bound" in traj_chart.columns:
+            traj_chart = traj_chart.set_index("ts")[["predicted", "upper_bound", "lower_bound"]].rename(
+                columns={"predicted": "Model Forecast", "upper_bound": "Upper 95% Bound", "lower_bound": "Lower 95% Bound"}
+            )
+        else:
+            traj_chart = traj_chart.set_index("ts")[["predicted"]].rename(columns={"predicted": "Model Forecast"})
+
+        # Bridge point
+        last_ts = actual_chart.index[-1]
+        last_val = actual_chart["Actual Demand"].iloc[-1]
+        actual_chart.loc[last_ts, "Model Forecast"] = last_val
+        if show_bounds:
+            actual_chart.loc[last_ts, "Upper 95% Bound"] = last_val
+            actual_chart.loc[last_ts, "Lower 95% Bound"] = last_val
+
+        if r:
+            actual_chart["Recommended Allocation"] = r["recommended_percent"]
+
+        combined_fc_chart = pd.concat([actual_chart, traj_chart], axis=0)
+
+        st.subheader(f"Multi-Step Forecast Trajectory — {fc_target} ({horizon_sec}s Horizon)")
+        st.line_chart(combined_fc_chart)
+
+        # Details and Baseline Comparison
+        exp_left, exp_right = st.columns(2)
+        with exp_left:
+            st.subheader("Forecast Metadata & Champion Lineage")
+            st.markdown(f"""
+            - **Predictor Type**: `{meta.get('predictor', 'N/A')}`
+            - **Active Champion ID**: `{meta.get('model_id', 'N/A')}`
+            - **Nominal Cadence**: `{cadence} seconds/sample`
+            - **Forecast Horizon**: `{horizon_sec} seconds` (`{fc_steps}` iterative steps)
+            - **Expected Error (MAE)**: `{meta.get('mae', 'N/A')}`
+            """)
+        with exp_right:
+            st.subheader("Recommended Allocation Impact")
+            if r:
+                st.markdown(f"""
+                - **Forecast-Driven Demand**: `{r['forecast_alloc']}%`
+                - **Final Recommended Allocation**: **`{r['recommended_percent']}%`** (`{r['units']} {r['unit_label']}`)
+                - **SLA Safety Floor Adjustment**: `{r['floor_reason']}`
+                - **Estimated Monthly Spend**: `${r['monthly_cost']}` *(vs static ${r['static_cost']})*
+                """)
+
+        st.divider()
+
+        # Stress Test / Traffic Spike Simulation
+        st.subheader("⚡ Live Traffic Spike Forecast Simulation")
+        st.caption("Simulate a sudden workload burst on current features and watch how the forecaster adapts.")
+        sim_spike = st.slider("Simulated Workload Spike Factor", 1.0, 3.0, 1.5, step=0.1, key="sim_spike_slider")
+
+        if st.button("🔥 Run Forecast Stress Test"):
+            spiked_frame = frame.copy()
+            spiked_frame[fc_target] = spiked_frame[fc_target] * sim_spike
+            spiked_traj, spiked_meta = forecast_horizon(fc_target, steps=fc_steps, df=spiked_frame)
+            if not spiked_traj.empty:
+                st.success(f"Spike forecast generated! Projected Peak: **{spiked_meta['forecast_peak']}%** (Original: {meta['forecast_peak']}%)")
+                spiked_chart = spiked_traj.set_index("step")[["predicted"]].rename(columns={"predicted": f"Spiked Forecast ({sim_spike}x)"})
+                orig_chart = trajectory.set_index("step")[["predicted"]].rename(columns={"predicted": "Normal Forecast (1.0x)"})
+                st.line_chart(pd.concat([orig_chart, spiked_chart], axis=1))
+    else:
+        st.warning(f"Could not generate forecast for {fc_target}. Check data health or model registry.")
 
 
 # ----------------------------------------------------------------------
@@ -838,6 +1002,7 @@ with tab_model:
 
     predictions = recent_predictions(choice, limit=window)
     if not predictions.empty:
+        predictions["ts"] = pd.to_datetime(predictions["ts"])
         st.line_chart(predictions.set_index("ts")[["actual", "predicted"]])
         st.caption(f"{len(predictions)} scored predictions, "
                    f"mean absolute error {predictions['abs_error'].mean():.4f}")

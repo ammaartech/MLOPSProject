@@ -581,37 +581,14 @@ echo ======================================================================
 echo   PREDICTIVE RESOURCE MONITORING SYSTEM
 echo ======================================================================
 echo.
-echo   --- Local (uses .venv) ---
-echo   1  Collect metrics          (sample this machine)
-echo   2  Run load generator       (makes CPU forecastable)
-echo   3  Run full pipeline        (all 12 stages)
-echo   4  Drift monitor + retrain
-echo   5  Continuous scheduler
-echo   6  Dashboard (Streamlit)
-echo   7  Python menu (main.py)
-echo   8  MLflow UI
-echo.
-echo   --- Docker ---
-echo   D  Docker: build image then start dashboard + MLflow
-echo   U  Docker: start dashboard + MLflow  (image already built)
-echo   X  Docker: stop containers
-echo   P  Docker: run full pipeline in container
+echo   1  Data entry ^& logging (Collect metrics + Pipeline cycle)
+echo   2  Dashboard (Streamlit)
 echo.
 echo   0  Exit
 echo.
 set /p "CHOICE=Select: "
-if "%CHOICE%"=="1" goto :collect
-if "%CHOICE%"=="2" goto :load
-if "%CHOICE%"=="3" goto :pipeline
-if "%CHOICE%"=="4" goto :drift
-if "%CHOICE%"=="5" goto :schedule
-if "%CHOICE%"=="6" goto :dashboard
-if "%CHOICE%"=="7" goto :pymenu
-if "%CHOICE%"=="8" goto :mlflow
-if /i "%CHOICE%"=="D" goto :docker_build_and_up
-if /i "%CHOICE%"=="U" goto :docker_up_only
-if /i "%CHOICE%"=="X" goto :docker_down_menu
-if /i "%CHOICE%"=="P" goto :docker_pipeline_menu
+if "%CHOICE%"=="1" goto :schedule
+if "%CHOICE%"=="2" goto :dashboard
 if "%CHOICE%"=="0" goto :done
 echo Invalid selection.
 goto :interactive
