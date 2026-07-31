@@ -345,6 +345,97 @@ label p {{ font-size: 0.8125rem !important; font-weight: 500; }}
     font-variant-numeric: tabular-nums;
 }}
 
+/* ------------------------------------------------- capacity cylinders */
+/* Allocation units, drawn as vertical vessels that fill from the bottom.
+   The earlier cylinders were withdrawn for a reason worth restating,
+   because it constrains everything below: they were 3D, gradient-filled,
+   and each was sized against its OWN capacity, so a full CPU cylinder and
+   a full disk cylinder looked identical while meaning nothing alike.
+
+   The fix is that geometry is FIXED. Every cylinder is the same width and
+   the same height, and the only thing that varies is the height of the
+   fill, always on the shared 0-100% scale. No gradient, no perspective,
+   no varying cap — none of which carry data. Native units appear as text
+   beneath, where a number belongs. */
+.rm-cyl-wrap {{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.75rem;
+    align-items: flex-start;
+    border: 1px solid {BORDER};
+    border-radius: 0.25rem;
+    padding: 1.35rem 1.5rem 1.1rem 1.5rem;
+    background: {SURFACE};
+}}
+.rm-cyl {{ width: 104px; text-align: center; }}
+.rm-cyl-track {{
+    position: relative;
+    width: 62px;
+    height: 186px;
+    margin: 0 auto;
+    background: {SURFACE_ALT};
+    border: 1px solid {BORDER};
+    /* An elliptical radius on the ends reads as a vessel without adding a
+       drawn 3D cap. It is identical on every cylinder, so it encodes
+       nothing and cannot mislead. */
+    border-radius: 31px / 16px;
+    overflow: hidden;
+}}
+.rm-cyl-fill {{
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    background: {SERIES[0]};
+}}
+/* The threshold is drawn across the full width and slightly proud of the
+   track, so it reads as a level line rather than part of the fill. */
+.rm-cyl-threshold {{
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: {CRITICAL};
+}}
+.rm-cyl-forecast {{
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: {INK};
+}}
+/* The recommended addition is a proposal, not a measurement. Dashed and
+   unfilled is the whole point: nothing in it has been observed. */
+.rm-cyl-add .rm-cyl-track {{
+    background: transparent;
+    border: 1.5px dashed {ACCENT};
+}}
+.rm-cyl-add .rm-cyl-fill {{ background: {ACCENT}; opacity: 0.16; }}
+.rm-cyl-name {{
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: {INK};
+    margin-top: 0.6rem;
+}}
+.rm-cyl-add .rm-cyl-name {{ color: {ACCENT}; }}
+.rm-cyl-meta {{
+    font-size: 0.6875rem;
+    line-height: 1.55;
+    color: {INK_MUTED};
+    font-variant-numeric: tabular-nums;
+    margin-top: 0.15rem;
+}}
+.rm-cyl-meta b {{ font-weight: 600; color: {INK}; }}
+.rm-cyl-scale {{
+    position: relative;
+    width: 2.6rem;
+    height: 186px;
+    font-size: 0.6875rem;
+    color: {INK_MUTED};
+    font-variant-numeric: tabular-nums;
+}}
+.rm-cyl-scale span {{
+    position: absolute;
+    right: 0;
+    transform: translateY(50%);
+}}
+
 /* ------------------------------------------------------------ key/value */
 .rm-kv {{
     display: grid;
@@ -468,38 +559,97 @@ def bullet(rows):
     def pct(v):
         return max(0.0, min(100.0, float(v)))
 
+    # Emitted as one unbroken line per bullet, like every other helper here.
+    # A pretty-printed block does not survive: st.markdown still runs the
+    # string through a Markdown parser before the HTML reaches the page, a
+    # blank line closes the raw-HTML block, and the next line — indented
+    # four spaces or more — becomes an indented CODE block. The symptom is
+    # the first bullet rendering and every one after it printing its own
+    # source. Keep this free of newlines and leading whitespace.
     blocks = []
     for r in rows:
         facts = "".join(
             f"<span>{label} <b>{value}</b></span>" for label, value in r["facts"]
         )
-        blocks.append(f"""
-        <div class="rm-bullet">
-          <div class="rm-bullet-head">
-            <span class="rm-bullet-name">{r['name']}</span>
-            <span class="rm-bullet-cap">{r['capacity_label']}</span>
-          </div>
-          <div class="rm-bullet-track">
-            <div class="rm-bullet-fill"
-                 style="width:{pct(r['current'])}%;background:{SERIES[0]}"></div>
-            <div class="rm-bullet-threshold" style="left:{pct(r['threshold'])}%"></div>
-            <div class="rm-bullet-forecast" style="left:{pct(r['forecast'])}%"></div>
-          </div>
-          <div class="rm-bullet-scale">
-            <span style="left:0%">0%</span>
-            <span style="left:25%">25%</span>
-            <span style="left:50%">50%</span>
-            <span style="left:75%">75%</span>
-            <span style="left:100%">100%</span>
-          </div>
-          <div class="rm-bullet-facts">{facts}</div>
-        </div>
-        """)
+        scale = "".join(
+            f'<span style="left:{tick}%">{tick}%</span>'
+            for tick in (0, 25, 50, 75, 100)
+        )
+        blocks.append(
+            '<div class="rm-bullet">'
+            '<div class="rm-bullet-head">'
+            f'<span class="rm-bullet-name">{r["name"]}</span>'
+            f'<span class="rm-bullet-cap">{r["capacity_label"]}</span>'
+            '</div>'
+            '<div class="rm-bullet-track">'
+            f'<div class="rm-bullet-fill" style="width:{pct(r["current"])}%;'
+            f'background:{SERIES[0]}"></div>'
+            f'<div class="rm-bullet-threshold" style="left:{pct(r["threshold"])}%"></div>'
+            f'<div class="rm-bullet-forecast" style="left:{pct(r["forecast"])}%"></div>'
+            '</div>'
+            f'<div class="rm-bullet-scale">{scale}</div>'
+            f'<div class="rm-bullet-facts">{facts}</div>'
+            '</div>'
+        )
 
     st.markdown(
         f'<div class="rm-bullet-wrap">{"".join(blocks)}</div>',
         unsafe_allow_html=True,
     )
+
+
+def cylinders(units):
+    """Allocation units as vertical cylinders on one shared 0-100% scale.
+
+    units: [{name, fill, threshold, forecast, lines, addition}] where
+    `fill`, `threshold` and `forecast` are percentages, `lines` is a list
+    of caption strings, and `addition` marks a proposed unit rather than a
+    measured one. `forecast` may be None, which omits the marker.
+
+    Everything except the fill height is identical between cylinders, so
+    two fills at the same height mean the same fraction of their own
+    resource — which is the only comparison a shared scale can support.
+    Native units belong in `lines`, as text.
+
+    Emitted as one unbroken string. `st.markdown` runs this through a
+    Markdown parser before the HTML reaches the page: a blank line closes
+    the raw-HTML block and any line indented four spaces becomes a code
+    block, so the first cylinder would render and the rest would print
+    their own source. Keep this free of newlines and leading whitespace.
+    """
+    def pct(value):
+        return max(0.0, min(100.0, float(value)))
+
+    scale = "".join(
+        f'<span style="bottom:{tick}%">{tick}%</span>'
+        for tick in (0, 25, 50, 75, 100)
+    )
+    blocks = [f'<div class="rm-cyl-scale">{scale}</div>']
+
+    for unit in units:
+        marker = ""
+        if unit.get("forecast") is not None:
+            marker = (f'<div class="rm-cyl-forecast" '
+                      f'style="bottom:{pct(unit["forecast"])}%"></div>')
+        threshold = ""
+        if unit.get("threshold") is not None:
+            threshold = (f'<div class="rm-cyl-threshold" '
+                         f'style="bottom:{pct(unit["threshold"])}%"></div>')
+
+        captions = "".join(f"<div>{line}</div>" for line in unit.get("lines", []))
+        blocks.append(
+            f'<div class="rm-cyl{" rm-cyl-add" if unit.get("addition") else ""}">'
+            '<div class="rm-cyl-track">'
+            f'<div class="rm-cyl-fill" style="height:{pct(unit["fill"])}%"></div>'
+            f'{threshold}{marker}'
+            '</div>'
+            f'<div class="rm-cyl-name">{unit["name"]}</div>'
+            f'<div class="rm-cyl-meta">{captions}</div>'
+            '</div>'
+        )
+
+    st.markdown(f'<div class="rm-cyl-wrap">{"".join(blocks)}</div>',
+                unsafe_allow_html=True)
 
 
 # Row tints, one step off the surface. Light enough that black body text

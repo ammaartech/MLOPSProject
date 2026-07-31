@@ -170,6 +170,10 @@ TABLES = {
     # ------------------------------------------------------------------
     # Stage 10: feature store versioning.
     # ------------------------------------------------------------------
+    # `version_id` identifies a materialisation: this definition against
+    # this data snapshot. `definition_id` identifies only what the features
+    # MEAN, and is what the train/serve compatibility check compares —
+    # see `model/feature_store.definition_id` for why the two must differ.
     "feature_versions": """
         CREATE TABLE IF NOT EXISTS feature_versions (
             version_id       TEXT PRIMARY KEY,
@@ -180,7 +184,8 @@ TABLES = {
             config_fingerprint TEXT,
             data_fingerprint TEXT,
             run_id           INTEGER,
-            created_at       TEXT NOT NULL
+            created_at       TEXT NOT NULL,
+            definition_id    TEXT
         )
     """,
 
@@ -204,7 +209,8 @@ TABLES = {
             version_id TEXT NOT NULL,
             ts         TEXT NOT NULL,
             features   TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            updated_at TEXT NOT NULL,
+            definition_id TEXT
         )
     """,
 
@@ -336,6 +342,9 @@ COLUMN_MIGRATIONS = [
     ("drift_events", "resolved_at", "TEXT"),
     ("recommendations", "type", "TEXT DEFAULT 'allocation'"),
     ("recommendations", "process_payload", "TEXT"),
+    ("feature_versions", "definition_id", "TEXT"),
+    ("feature_online", "definition_id", "TEXT"),
+    ("model_versions", "feature_definition", "TEXT"),
 ]
 
 
@@ -389,6 +398,12 @@ DEFAULT_CONFIG = [
     ("collector.sample_interval_sec", "3", "int", "collector",
      "Seconds between samples taken by the psutil logger"),
 
+    # ---- export --------------------------------------------------------
+    ("export.mirror_raw_csv", "true", "bool", "export",
+     "Keep data/exports/metrics_raw.csv in step with the metrics table on "
+     "every write, so the CSV is never a stale snapshot taken by hand. "
+     "Inserts append one line; edits and deletes rewrite the file."),
+
     # ---- pipeline: source selection and cleaning -----------------------
     ("pipeline.default_source", "sqlite://", "str", "pipeline",
      "Which connector the pipeline reads from when none is named. "
@@ -409,6 +424,13 @@ DEFAULT_CONFIG = [
      "events, so the default flags without altering values."),
     ("pipeline.rollup_freqs", '["15s", "1min", "5min"]', "json", "pipeline",
      "Retention/downsample tiers produced by the transform stage"),
+    ("pipeline.stale_run_minutes", "60", "int", "pipeline",
+     "Age at which a pipeline_run still marked 'running' is treated as "
+     "abandoned and reconciled to 'interrupted'. Only a process that died "
+     "without reaching finish_run leaves one — a killed scheduler window, "
+     "a suspended laptop, a restarted container. Must stay comfortably "
+     "above a full pass, or a legitimate long run would be flagged while "
+     "it is still working."),
     ("pipeline.degenerate_std_threshold", "0.25", "float", "pipeline",
      "A target with std below this is constant; modelling it is not "
      "meaningful and the pipeline says so explicitly"),
@@ -515,6 +537,14 @@ DEFAULT_CONFIG = [
      "pipeline reports absolute MAE instead"),
     ("model.forecast_horizon", "20", "int", "model",
      "Multi-step forecast length. 20 steps x 3s = 60s."),
+    ("model.horizon_context_rows", "300", "int", "model",
+     "Rows of history the iterative multi-step forecast keeps. It rebuilds "
+     "every feature once per step and uses only the newest row, so feeding "
+     "it the whole collection made a horizon forecast cost roughly a "
+     "second and grow without bound. The newest vector can only depend on "
+     "max(features.lags) + features.roll_window + features.target_shift "
+     "rows, so anything comfortably above that is exact. Set to 0, or "
+     "below twice that span, to disable trimming and use the full frame."),
     ("model.seasonal_lag", "80", "int", "model",
      "Load-generator period in samples (240s / 3s), for seasonal naive"),
     ("model.cv_folds", "4", "int", "model",
@@ -580,7 +610,17 @@ DEFAULT_CONFIG = [
     ("policy.headroom", "0.20", "float", "policy",
      "Safety buffer above the forecast peak"),
     ("policy.capacity_alert_threshold", "80.0", "float", "policy",
-     "Threshold above which capacity warning is triggered (percent)"),
+     "Utilisation percentage that triggers the capacity warning: the "
+     "dashboard's threshold marker, the point a recommended addition is "
+     "drawn, and the level `service/process_alert.py` reacts to. Distinct "
+     "from policy.headroom, which is a buffer above a forecast rather than "
+     "a level on the node."),
+    ("policy.process_alert_cooldown_sec", "600", "int", "policy",
+     "Minimum seconds between process alerts. Memory pressure persists, "
+     "so without this the scheduler files an identical top-five list on "
+     "every cycle and buries the table under one repeated event."),
+    ("policy.process_alert_top_n", "5", "int", "policy",
+     "How many memory consumers a process alert lists"),
     ("policy.max_breach_rate", "5.0", "float", "policy",
      "SLA: maximum % of samples allowed to exceed the allocation"),
     ("policy.safety_window", "100", "int", "policy",
@@ -597,6 +637,74 @@ DEFAULT_CONFIG = [
      "Age beyond which raw metrics may be purged"),
     ("retention.enabled", "false", "bool", "retention",
      "Whether the scheduler applies the retention policy"),
+
+    # ---- scheduler -------------------------------------------------------
+    ("scheduler.interval_sec", "15", "int", "scheduler",
+     "Seconds from the START of one cycle to the start of the next. The "
+     "loop sleeps the remainder of this after the work, so the setting is "
+     "a cadence rather than a gap. A cycle measured ~2.5s once the rollup "
+     "stage stopped materialising empty buckets, so 15s leaves a wide "
+     "margin; if one ever overruns, the next starts immediately — late, "
+     "but never concurrent. Replaced a hardcoded "
+     "collector.sample_interval_sec x 10."),
+    ("scheduler.drift_every", "10", "int", "scheduler",
+     "Run the drift monitor every Nth cycle. Drift needs a run of scored "
+     "predictions before it can say anything, so checking every cycle "
+     "spends time to reach the same answer."),
+
+    # ---- dashboard -------------------------------------------------------
+    ("dashboard.refresh_ms", "15000", "int", "dashboard",
+     "How often the dashboard re-checks for a completed pipeline run. This "
+     "is a POLL, not a cache flush: results are keyed on the ETL run id and "
+     "reused until a new run appears, so a tick that finds nothing new "
+     "costs one 5ms query rather than a full recompute."),
+
+    # ---- synthetic scenario twin ----------------------------------------
+    # Every number the scenario generator uses. They live here, and not in
+    # the generator, for a specific reason: a scenario is an argument about
+    # whether the policy finding generalises, and an argument whose
+    # parameters can be edited in code is an argument nobody can audit.
+    # Editing any of these lands in `config_history` with a timestamp, so
+    # "the scenarios were retuned until the model won" is a checkable
+    # claim rather than a matter of trust.
+    ("twin.seed", "42", "int", "twin",
+     "Random seed for scenario generation. The same seed and the same "
+     "settings regenerate the same series, which is what lets two twin "
+     "runs across a code change be compared at all."),
+    ("twin.duration_min", "30", "float", "twin",
+     "Minutes of synthetic data per scenario. The backtest needs "
+     "policy.safety_window + 2 x model.forecast_horizon rows before it "
+     "produces a single decision, so this cannot go very low."),
+    ("twin.gap_minutes", "20", "float", "twin",
+     "Length of the collection break cut into gap_injection. The real "
+     "data has three gaps, the longest 26.7 minutes."),
+    ("twin.gap_padding_min", "10", "float", "twin",
+     "Minimum minutes of series kept either side of an injected gap. "
+     "Without it a long gap eats the run and leaves one segment, which "
+     "tests nothing."),
+    ("twin.spike_hold_min", "10", "float", "twin",
+     "How long sustained_spike holds above 90%. A single sample over the "
+     "capacity threshold is noise; a held one is a capacity decision."),
+    ("twin.cadence_drift_sec", "[3, 5, 4]", "json", "twin",
+     "Sampling intervals the cadence_drift scenario moves through, in "
+     "order and in equal time shares. Mirrors the mixed cadence found in "
+     "the real series."),
+    ("twin.levels",
+     '{"idle": {"cpu": [5.0, 15.0], "mem": [10.0, 20.0]}, '
+     '"steady": {"cpu": [15.0, 30.0], "mem": [20.0, 30.0]}, '
+     '"moderate": {"cpu": [40.0, 50.0], "mem": [50.0, 60.0]}, '
+     '"high": {"cpu": [80.0, 95.0], "mem": [75.0, 85.0]}, '
+     '"saturated": {"cpu": [90.0, 96.0], "mem": [90.0, 95.0]}}',
+     "json", "twin",
+     "Utilisation bands each scenario phase samples from, as "
+     "[low, high] percentages. `idle` and `high` are the two sides of the "
+     "regime_change step; `moderate` is the busier baseline "
+     "multi_host_shift starts from."),
+    ("twin.disk_band_mb_s",
+     '{"low": [0.01, 0.5], "high": [0.1, 1.0]}',
+     "json", "twin",
+     "Disk throughput bands in MB/s. `high` belongs to the busier "
+     "simulated host, which moves more data as well as more CPU."),
 ]
 
 

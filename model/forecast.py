@@ -242,6 +242,10 @@ def train_one(df, target, run_id=None, data_fingerprint=None,
         data_fingerprint=data_fingerprint
     )
     feature_version = manifest.get("version_id")
+    # What the features MEAN, without the data snapshot they were built
+    # from. Serving compares this; `feature_version` stays the provenance
+    # record. See `model/feature_store.definition_id`.
+    feature_definition = manifest.get("definition_id")
 
     result = {
         "target": target,
@@ -249,6 +253,7 @@ def train_one(df, target, run_id=None, data_fingerprint=None,
         "params": params,
         "model_id": _model_id(target, params, feature_version),
         "feature_version": feature_version,
+        "feature_definition": feature_definition,
         "data_fingerprint": data_fingerprint,
         "config_fingerprint": config.fingerprint(),
         "run_id": run_id,
@@ -300,6 +305,7 @@ def train_one(df, target, run_id=None, data_fingerprint=None,
         "target": target,
         "model_id": result["model_id"],
         "feature_version": feature_version,
+        "feature_definition": feature_definition,
         "params": params,
     }, model_path(result["model_id"]))
 

@@ -161,22 +161,48 @@ def rollup(df, freq="1min"):
         return pd.DataFrame()
 
     numeric = [c for c in schema_mod.value_columns() if c in df.columns]
-    frame = df.set_index("ts")
+    if not numeric:
+        return pd.DataFrame()
 
-    aggregated = frame[numeric].resample(freq).agg(
-        ["mean", "max", lambda s: s.quantile(0.95)]
-    )
+    # Group by a FLOORED timestamp rather than resampling.
+    #
+    # `resample` spans the entire range between the first and last
+    # timestamp, materialising every bucket in between — including the
+    # empty ones — and then runs the aggregation over all of them. Empty
+    # buckets were already being discarded below, but only after they had
+    # been built and aggregated, and the p95 aggregation is a Python
+    # lambda called once per bucket.
+    #
+    # That made the cost a function of the CALENDAR SPAN rather than of
+    # the data. On a series holding 2,805 rows across a 50-hour span — two
+    # hours of samples either side of a two-day collection break — the
+    # 15-second tier built 12,055 buckets to keep 572, and this one
+    # function accounted for 9.3 seconds of a 13.8-second scheduler cycle.
+    # It grew every time the collection aged, whether or not any new data
+    # had arrived.
+    #
+    # `dt.floor` assigns each row the label of the bucket it belongs to,
+    # and groupby creates a group only where a row exists. For the
+    # frequencies used here — 15s, 1min, 5min, all of which divide evenly
+    # into a day — flooring to the epoch and resample's default
+    # `origin='start_day'` land on the same boundaries, so the labels and
+    # the contents are identical. Only the empty buckets are gone, and
+    # they were being thrown away regardless.
+    frame = df[["ts"] + numeric]
+    bucket = frame["ts"].dt.floor(freq)
+    bucket.name = "ts"
+    grouped = frame.groupby(bucket)[numeric]
+
+    aggregated = grouped.agg(["mean", "max", lambda s: s.quantile(0.95)])
     aggregated.columns = [
         f"{col}_{'p95' if 'lambda' in str(stat) else stat}"
         for col, stat in aggregated.columns
     ]
-    aggregated["samples"] = frame[numeric[0]].resample(freq).size() if numeric else 0
+    aggregated["samples"] = grouped.size()
 
-    # Drop buckets that contain no observations. `resample` spans the full
-    # range between the first and last timestamp, so a multi-day break in
-    # collection would otherwise produce tens of thousands of empty rows —
-    # the 15-second tier generated 29,396 of them across a five-day gap.
-    # A bucket with no samples is an absence, not a measurement.
+    # A bucket with no samples is an absence, not a measurement. Grouping
+    # cannot produce one, so this is now a guard rather than a filter —
+    # kept because the guarantee belongs next to the claim.
     return aggregated[aggregated["samples"] > 0].reset_index()
 
 

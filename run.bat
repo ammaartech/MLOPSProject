@@ -9,8 +9,15 @@ REM     3. pip dependencies from requirements.txt
 REM     4. data directories and database initialisation (tables + config seed)
 REM
 REM  Usage:
-REM     run.bat                 interactive menu
+REM     run.bat                 start the dashboard and the scheduler
+REM                             (collector in-process, 15s cycle) in their
+REM                             own windows, then show the menu. Both keep
+REM                             running after the menu exits.
+REM     run.bat refresh         one pipeline pass on demand: ETL,
+REM                             features, forecast, recommendation. Use
+REM                             when the loop is not running.
 REM     run.bat setup           prerequisites only, then exit
+REM     run.bat crud            the Data / CRUD submenu (menu option 1)
 REM     run.bat collect [mins]  sample this machine into the database
 REM     run.bat load [mins]     run the CPU load generator
 REM     run.bat pipeline        all twelve stages, one pass
@@ -362,7 +369,7 @@ echo [k8s] starting the NodePort gateway on network %K8SNET% ...
 docker run -d --name rms-gateway --network "%K8SNET%" --restart unless-stopped -p 30080:30080 -p 30081:30081 -p 30082:30082 --entrypoint sh alpine/socat:latest -c "socat tcp-listen:30080,fork,reuseaddr tcp-connect:%K8SNODE%:30080 & socat tcp-listen:30081,fork,reuseaddr tcp-connect:%K8SNODE%:30081 & socat tcp-listen:30082,fork,reuseaddr tcp-connect:%K8SNODE%:30082" >nul
 if errorlevel 1 (
     echo   WARNING: the gateway did not start. The three environments are
-    echo   running regardless — they are just not reachable from Windows.
+    echo   running regardless - they are just not reachable from Windows.
     echo   Fall back to: kubectl port-forward -n rms-production svc/dashboard 30080:8501
 )
 endlocal & exit /b 0
@@ -458,7 +465,7 @@ REM cmd's for /f parser mis-splits the command and the loop silently runs
 REM nothing — POD comes back empty and this reads as "no pod deployed".
 for /f "tokens=*" %%p in ('kubectl get pod -n %NS% -l component^=dashboard -o jsonpath^="{.items[0].metadata.name}" 2^>nul') do set "POD=%%p"
 if not defined POD (
-    echo   [%ENVNAME%] no dashboard pod running — deploy first: run.bat k8s-up
+    echo   [%ENVNAME%] no dashboard pod running - deploy first: run.bat k8s-up
     endlocal & exit /b 1
 )
 
@@ -574,21 +581,85 @@ REM ================================================================
 REM  ACTIONS
 REM ================================================================
 if /i "%ACTION%"=="setup"     goto :done
+if /i "%ACTION%"=="crud"      goto :crud
 if /i "%ACTION%"=="collect"   goto :collect
 if /i "%ACTION%"=="load"      goto :load
 if /i "%ACTION%"=="pipeline"  goto :pipeline
+if /i "%ACTION%"=="refresh"   goto :refresh
 if /i "%ACTION%"=="drift"     goto :drift
 if /i "%ACTION%"=="schedule"  goto :schedule
 if /i "%ACTION%"=="dashboard" goto :dashboard
 if /i "%ACTION%"=="menu"      goto :pymenu
 if /i "%ACTION%"=="mlflow"    goto :mlflow
-if /i "%ACTION%"=="menu-interactive" goto :interactive
+if /i "%ACTION%"=="menu-interactive" goto :autostart
 
 echo Unknown action "%ACTION%".
-echo Valid: setup ^| collect ^| load ^| pipeline ^| drift ^| schedule ^| dashboard ^| menu ^| mlflow ^| reset-deps
+echo Valid: setup ^| crud ^| collect ^| load ^| pipeline ^| drift ^| schedule ^| dashboard ^| menu ^| mlflow ^| reset-deps
 echo Docker: docker-build ^| docker-up ^| docker-down ^| docker-pipeline ^| docker-drift ^| docker-push
 echo K8s:    k8s-up ^| k8s-down ^| k8s-status ^| k8s-seed ^| k8s-build ^| k8s-pipeline
 exit /b 1
+
+REM ----------------------------------------------------------------
+REM  Autostart -- the live system, before the menu.
+REM
+REM  Two long-running things, each in its own window:
+REM
+REM      collector   samples this machine every few seconds
+REM      dashboard   serves the UI and re-checks for new pipeline runs
+REM
+REM  The scheduler runs the collector IN-PROCESS (--with-collector), so a
+REM  sample cannot arrive without the loop that acts on it also being
+REM  alive, and it is one window rather than two.
+REM
+REM  The loop is back on a 15-second cycle, which is only viable because
+REM  the reason it used to fall behind is fixed. It was not the ETL as
+REM  such: the rollup stage resampled across the whole calendar span, so
+REM  a two-day collection gap made it build 12,055 buckets to keep 572,
+REM  and that cost grew as the collection aged whether or not new data had
+REM  arrived. Grouping on a floored timestamp instead produces identical
+REM  rollups from the data alone -- a cycle went from ~13.8s to ~2.5s.
+REM
+REM  Cycles cannot overlap: the interval is the wait AFTER a cycle ends,
+REM  so a slow pass makes the loop late, never concurrent.
+REM
+REM  Forecasts also still refresh on demand -- the dashboard's "Refresh
+REM  data now" button, or `run.bat refresh` -- which is what to use when
+REM  the loop is not running. See orchestration\refresh.py.
+REM
+REM  Closing this menu does not stop either window; close them to stop.
+REM
+REM  This block is reached ONLY on the way in. Every submenu returns to
+REM  :interactive below, which is past it, so nothing here fires twice
+REM  within a session.
+REM ----------------------------------------------------------------
+:autostart
+echo.
+echo Starting the live system...
+echo.
+
+REM  Port check rather than a process check: the thing that matters is
+REM  whether something is already serving 8501, and a second Streamlit
+REM  would fail to bind anyway.
+netstat -ano | findstr /r /c:":8501 .*LISTENING" >nul 2>&1
+if errorlevel 1 (
+    start "RMS Dashboard" /D "%CD%" "%VENV_DIR%\Scripts\streamlit.exe" run dashboard\app.py
+    echo   dashboard : starting  -^> http://localhost:8501
+) else (
+    echo   dashboard : already serving -^> http://localhost:8501
+)
+
+REM  Launched unconditionally: the scheduler holds a PID lock in
+REM  data\scheduler.lock and refuses to start a second time on its own.
+REM  Two of them would sample this machine twice into one table, which
+REM  reads downstream as duplicate timestamps and a cadence that never
+REM  happened -- so a redundant one prints why it is stopping and exits.
+start "RMS Scheduler" /D "%CD%" "%VENV_PY%" -m orchestration.scheduler --with-collector
+echo   scheduler : collecting and forecasting every 15s
+echo.
+echo   Both run in their own windows and keep running after this menu
+echo   exits. Close those windows to stop them.
+echo.
+timeout /t 3 >nul
 
 REM ----------------------------------------------------------------
 :interactive
@@ -596,24 +667,235 @@ echo ======================================================================
 echo   PREDICTIVE RESOURCE MONITORING SYSTEM
 echo ======================================================================
 echo.
-echo   1  Data entry ^& logging (Collect metrics + Pipeline cycle)
-echo   2  Dashboard (Streamlit)
+echo   Dashboard  http://localhost:8501       (its own window)
+echo   Scheduler  collecting + forecasting 15s (its own window)
+echo.
+echo   1  Data / CRUD operations (view, create, edit, delete)
+echo   2  Logger (extra sampling options)
+echo   3  Refresh forecasts now (one pipeline pass)
+echo   4  Scheduler (manual, fixed number of cycles)
 echo.
 echo   0  Exit
 echo.
+REM  The dashboard is deliberately not a menu entry. Streamlit holds the
+REM  console for as long as it serves, so launching it from here ended the
+REM  session that launched it -- the menu only came back when the UI was
+REM  killed. It is a long-running service, so it is started above, in its
+REM  own window. `run.bat dashboard` still runs one in the foreground.
+REM
+REM  Entry 3 remains for a scheduler with different settings -- a fixed
+REM  cycle count, a different interval. It will refuse while the autostart
+REM  one is alive, which is the lock doing its job; stop that window first.
 set /p "CHOICE=Select: "
-if "%CHOICE%"=="1" goto :schedule
-if "%CHOICE%"=="2" goto :dashboard
+if "%CHOICE%"=="1" goto :crud
+if "%CHOICE%"=="2" goto :logger_menu
+if "%CHOICE%"=="3" goto :refresh_once
+if "%CHOICE%"=="4" goto :scheduler_menu
 if "%CHOICE%"=="0" goto :done
 echo Invalid selection.
 goto :interactive
+
+REM ----------------------------------------------------------------
+REM  Logger submenu.
+REM
+REM  The interval is the gap BETWEEN samples; the duration is how long to
+REM  keep sampling. Blank at either prompt takes the default - the
+REM  configured collector.sample_interval_sec, and no time limit - so the
+REM  submenu never forces a number on anyone who just wants it running.
+REM
+REM  Values are passed straight to argparse, which rejects a typo with a
+REM  message and returns here rather than acting on a garbage number.
+REM ----------------------------------------------------------------
+:logger_menu
+echo.
+echo ----------------------------------------------------------------------
+echo   LOGGER
+echo ----------------------------------------------------------------------
+echo.
+echo   Every sample is written to the database and mirrored to
+echo   data\exports\metrics_raw.csv as it is taken.
+echo.
+echo   1  Log one sample now
+echo   2  Log for a fixed duration
+echo   3  Log continuously (Ctrl+C to stop)
+echo.
+echo   0  Back
+echo.
+set /p "CHOICE=Select: "
+if "%CHOICE%"=="1" (
+    echo.
+    "%VENV_PY%" -m collector.psutil_logger --once
+    echo.
+    pause
+    goto :logger_menu
+)
+if "%CHOICE%"=="2" goto :logger_fixed
+if "%CHOICE%"=="3" (
+    echo.
+    echo Logging continuously -- press Ctrl+C to stop.
+    "%VENV_PY%" -m collector.psutil_logger
+    echo.
+    pause
+    goto :logger_menu
+)
+if "%CHOICE%"=="0" goto :interactive
+echo Invalid selection.
+goto :logger_menu
+
+:logger_fixed
+set "LOGMINS="
+set "LOGEVERY="
+set /p "LOGMINS=  Minutes to log for: "
+set /p "LOGEVERY=  Seconds between samples [configured default]: "
+if not defined LOGMINS (
+    echo   Cancelled.
+    pause
+    goto :logger_menu
+)
+echo.
+if defined LOGEVERY (
+    "%VENV_PY%" -m collector.psutil_logger --minutes %LOGMINS% --interval %LOGEVERY%
+) else (
+    "%VENV_PY%" -m collector.psutil_logger --minutes %LOGMINS%
+)
+echo.
+pause
+goto :logger_menu
+
+REM ----------------------------------------------------------------
+REM  One pipeline pass, then back to the menu. The dashboard's sidebar
+REM  button runs exactly this, detached; this is the console version.
+REM ----------------------------------------------------------------
+:refresh_once
+echo.
+"%VENV_PY%" -m orchestration.refresh
+echo.
+pause
+goto :interactive
+
+REM ----------------------------------------------------------------
+REM  Scheduler submenu.
+REM
+REM  This is the "continuously analyses" clause of the brief: a loop that
+REM  re-runs the pipeline on a cadence and checks for drift every so many
+REM  cycles. --with-collector samples in the same process, so one window
+REM  both gathers data and acts on it.
+REM ----------------------------------------------------------------
+:scheduler_menu
+echo.
+echo ----------------------------------------------------------------------
+echo   SCHEDULER
+echo ----------------------------------------------------------------------
+echo.
+echo   1  Run continuously (Ctrl+C to stop)
+echo   2  Run continuously, collecting in the same process
+echo   3  Run a fixed number of cycles
+echo.
+echo   0  Back
+echo.
+set /p "CHOICE=Select: "
+if "%CHOICE%"=="1" (
+    echo.
+    echo Scheduler running -- press Ctrl+C to stop.
+    "%VENV_PY%" -m orchestration.scheduler --drift-every 10
+    echo.
+    pause
+    goto :scheduler_menu
+)
+if "%CHOICE%"=="2" (
+    echo.
+    echo Scheduler + collector running -- press Ctrl+C to stop.
+    "%VENV_PY%" -m orchestration.scheduler --drift-every 10 --with-collector
+    echo.
+    pause
+    goto :scheduler_menu
+)
+if "%CHOICE%"=="3" goto :scheduler_cycles
+if "%CHOICE%"=="0" goto :interactive
+echo Invalid selection.
+goto :scheduler_menu
+
+:scheduler_cycles
+set "SCHEDCYCLES="
+set "SCHEDEVERY="
+set /p "SCHEDCYCLES=  Number of cycles: "
+set /p "SCHEDEVERY=  Seconds between cycles [configured default]: "
+if not defined SCHEDCYCLES (
+    echo   Cancelled.
+    pause
+    goto :scheduler_menu
+)
+echo.
+if defined SCHEDEVERY (
+    "%VENV_PY%" -m orchestration.scheduler --cycles %SCHEDCYCLES% --interval %SCHEDEVERY%
+) else (
+    "%VENV_PY%" -m orchestration.scheduler --cycles %SCHEDCYCLES%
+)
+echo.
+pause
+goto :scheduler_menu
+
+REM ----------------------------------------------------------------
+REM  CRUD submenu.
+REM
+REM  Each entry runs ONE operation from crud\console.py and comes back
+REM  here. The operation names below are that module's own dispatch keys,
+REM  so this menu and `python -m crud.console <op>` cannot drift apart.
+REM
+REM  batch asks only WHICH operation. Record ids, field names and values
+REM  are prompted for in Python, where a typo can be rejected and retried
+REM  — `set /p` would hand an unvalidated string straight to SQL and a
+REM  mistyped number would end the session.
+REM ----------------------------------------------------------------
+:crud
+echo.
+echo ----------------------------------------------------------------------
+echo   DATA / CRUD OPERATIONS
+echo ----------------------------------------------------------------------
+echo.
+echo   Create, read, update and delete the logged metric values.
+echo   Every write is mirrored to data\exports\metrics_raw.csv as it happens.
+echo.
+echo   1  View all records
+echo   2  View latest N records
+echo   3  View records between two timestamps
+echo   4  Total record count
+echo   5  Create a record
+echo   6  Update a field on a record
+echo   7  Delete a record
+echo   8  Purge records before a timestamp
+echo.
+echo   0  Back
+echo.
+set "CRUDOP="
+set /p "CHOICE=Select: "
+if "%CHOICE%"=="1" set "CRUDOP=view"
+if "%CHOICE%"=="2" set "CRUDOP=latest"
+if "%CHOICE%"=="3" set "CRUDOP=between"
+if "%CHOICE%"=="4" set "CRUDOP=count"
+if "%CHOICE%"=="5" set "CRUDOP=create"
+if "%CHOICE%"=="6" set "CRUDOP=update"
+if "%CHOICE%"=="7" set "CRUDOP=delete"
+if "%CHOICE%"=="8" set "CRUDOP=purge"
+
+if defined CRUDOP (
+    echo.
+    "%VENV_PY%" -m crud.console %CRUDOP%
+    echo.
+    pause
+    goto :crud
+)
+if "%CHOICE%"=="0" goto :interactive
+
+echo Invalid selection.
+goto :crud
 
 REM ----------------------------------------------------------------
 :collect
 REM The collector runs until Ctrl+C. Pair it with the load generator in a
 REM second window, or the CPU series is a flat idle line with nothing to
 REM forecast.
-echo Collecting metrics — press Ctrl+C to stop.
+echo Collecting metrics - press Ctrl+C to stop.
 "%VENV_PY%" -m collector.psutil_logger
 goto :done
 
@@ -630,12 +912,18 @@ goto :done
 "%VENV_PY%" -m orchestration.run_pipeline
 goto :done
 
+:refresh
+REM One pass: ETL, features, forecast, recommendation. What the background
+REM scheduler used to do on a timer, now done when asked.
+"%VENV_PY%" -m orchestration.refresh
+goto :done
+
 :drift
 "%VENV_PY%" -m serving.drift
 goto :done
 
 :schedule
-echo Continuous loop — press Ctrl+C to stop.
+echo Continuous loop - press Ctrl+C to stop.
 "%VENV_PY%" -m orchestration.scheduler --with-collector
 goto :done
 
