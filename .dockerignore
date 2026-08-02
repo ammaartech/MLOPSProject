@@ -25,6 +25,14 @@ __pycache__/
 data/
 mlruns/
 
+# Local secrets (SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_DB_URL). These
+# reach a container as environment variables (Compose's env_file, or a
+# Kubernetes Secret — see k8s/base/deployment.yaml), never baked into a
+# layer. This image is pushed to a public Docker Hub repo; without this
+# line `COPY . .` would ship every credential in .env to anyone who pulls
+# the image.
+.env
+
 # The collected metrics. Tracked in git (unlike data/), but excluded here
 # for exactly the reason above: baking it in would pin every pull to the
 # measurements taken on build day, and compose bind-mounts ./dataset over

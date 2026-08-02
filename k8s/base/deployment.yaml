@@ -92,6 +92,28 @@ spec:
             # database, which is what makes the three genuinely separate.
             - name: RMS_ENVIRONMENT
               value: base
+            # dashboard/auth.py's bootstrap-exception values — same reason
+            # DB_PATH is an env var and not a config-table row: they must
+            # be readable before any database, or any login, is reachable.
+            # Sourced from a per-namespace Secret (never committed, never
+            # baked into the image) so the same login screen and the same
+            # accounts work in every environment. `optional: true` means a
+            # namespace with no synced secret yet degrades to auth.py's own
+            # "Supabase is not configured" screen rather than CrashLoop —
+            # honest and visible instead of hidden. `run.bat k8s-up` syncs
+            # this Secret from the local .env on every deploy.
+            - name: SUPABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: rms-supabase
+                  key: SUPABASE_URL
+                  optional: true
+            - name: SUPABASE_ANON_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rms-supabase
+                  key: SUPABASE_ANON_KEY
+                  optional: true
           volumeMounts:
             - name: data
               mountPath: /app/data

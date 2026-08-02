@@ -9,10 +9,18 @@ REM     3. pip dependencies from requirements.txt
 REM     4. data directories and database initialisation (tables + config seed)
 REM
 REM  Usage:
-REM     run.bat                 start the dashboard and the scheduler
-REM                             (collector in-process, 15s cycle) in their
-REM                             own windows, then show the menu. Both keep
-REM                             running after the menu exits.
+REM     run.bat                 ensure Kubernetes is up, deploy/refresh
+REM                             production + dev + qs, sync the Supabase
+REM                             login secret into all three, then open
+REM                             ONLY the production dashboard
+REM                             (http://localhost:30080) before showing
+REM                             the local menu. dev/qs stay reachable at
+REM                             :30081 / :30082 but are not auto-opened.
+REM                             The local venv prerequisites still run
+REM                             first, because the menu's CRUD/logger/
+REM                             refresh/scheduler options work against
+REM                             this machine's own dataset\metrics.db,
+REM                             independently of what is served in k8s.
 REM     run.bat refresh         one pipeline pass on demand: ETL,
 REM                             features, forecast, recommendation. Use
 REM                             when the loop is not running.
@@ -186,6 +194,7 @@ if /i "%ACTION%"=="k8s-pipeline" goto :k8s_pipeline
 :k8s_up
 call :k8s_ensure_images
 if errorlevel 1 exit /b 1
+call :k8s_sync_secrets
 for %%E in (production dev qs) do (
     echo [k8s] applying %%E ...
     kubectl apply -k "k8s\overlays\%%E"
@@ -380,6 +389,146 @@ if /i "%~1"=="dev"        exit /b 0
 if /i "%~1"=="qs"         exit /b 0
 echo   ERROR: unknown environment "%~1". Use production, dev or qs.
 exit /b 1
+
+REM ----------------------------------------------------------------
+REM  Sync the Supabase login credentials into all three namespaces.
+REM
+REM  dashboard/auth.py reads SUPABASE_URL and SUPABASE_ANON_KEY from the
+REM  environment, the same bootstrap-exception pattern as DB_PATH: a
+REM  value needed before any database (or any login) is reachable, so it
+REM  cannot itself live in the config table. Locally that comes from
+REM  .env; in the cluster it has to arrive as a Kubernetes Secret, since
+REM  baking it into the image would ship it inside a public Docker Hub
+REM  pull (see .dockerignore) and a plain env value in deployment.yaml
+REM  would commit it to git.
+REM
+REM  This is the ONLY place these two values are read out of .env for
+REM  Kubernetes — one source of truth, kept in sync on every k8s-up
+REM  rather than typed once and left to drift. Re-running is always
+REM  safe: `kubectl apply` on a regenerated Secret updates in place.
+REM
+REM  Deliberately does NOT sync SUPABASE_DB_URL — that connection string
+REM  is a Postgres superuser credential, read only by
+REM  `python -m dashboard.apply_sql` on this machine, and the running
+REM  dashboard has no legitimate use for it. Handing the pods a
+REM  credential they do not need would widen the blast radius of a
+REM  compromised pod for no reason.
+REM ----------------------------------------------------------------
+:k8s_sync_secrets
+if not exist ".env" (
+    echo   WARNING: .env not found — Supabase login will show
+    echo   "not configured" in every environment until you create one
+    echo   ^(copy .env.example to .env^) and run this again.
+    exit /b 0
+)
+set "SB_URL="
+set "SB_ANON="
+for /f "tokens=1,* delims==" %%a in ('findstr /b "SUPABASE_URL=" .env') do set "SB_URL=%%b"
+for /f "tokens=1,* delims==" %%a in ('findstr /b "SUPABASE_ANON_KEY=" .env') do set "SB_ANON=%%b"
+if not defined SB_URL (
+    echo   WARNING: SUPABASE_URL not set in .env — skipping secret sync.
+    exit /b 0
+)
+if not defined SB_ANON (
+    echo   WARNING: SUPABASE_ANON_KEY not set in .env — skipping secret sync.
+    exit /b 0
+)
+for %%E in (production dev qs) do (
+    kubectl create namespace rms-%%E --dry-run=client -o yaml 2>nul | kubectl apply -f - >nul 2>&1
+    kubectl create secret generic rms-supabase -n rms-%%E ^
+        --from-literal=SUPABASE_URL=%SB_URL% ^
+        --from-literal=SUPABASE_ANON_KEY=%SB_ANON% ^
+        --dry-run=client -o yaml | kubectl apply -f - >nul
+    echo   [k8s] synced Supabase login into rms-%%E
+)
+exit /b 0
+
+REM ----------------------------------------------------------------
+REM  Bring Kubernetes up (if needed), deploy all three environments,
+REM  and open ONLY production in the browser. Called from :autostart,
+REM  which is why every failure path falls through to the local menu
+REM  instead of exiting run.bat -- CRUD/logger/refresh do not need k8s.
+REM ----------------------------------------------------------------
+:k8s_autostart
+docker version >nul 2>&1
+if not errorlevel 1 goto :k8s_autostart_docker_ready
+echo [k8s] Docker Desktop is not running -- starting it ...
+docker desktop start >nul 2>&1
+set "DOCKER_WAIT=0"
+
+:k8s_autostart_wait_docker
+docker version >nul 2>&1
+if not errorlevel 1 goto :k8s_autostart_docker_ready
+set /a DOCKER_WAIT+=1
+if %DOCKER_WAIT% GEQ 24 goto :k8s_autostart_docker_timeout
+timeout /t 5 >nul
+goto :k8s_autostart_wait_docker
+
+:k8s_autostart_docker_timeout
+echo   Docker Desktop did not come up within 2 minutes.
+echo   Start it manually, then run.bat again for production to
+echo   open automatically. Continuing with the local menu only.
+goto :k8s_autostart_skip
+
+:k8s_autostart_docker_ready
+echo   Docker Desktop is up.
+
+kubectl cluster-info --request-timeout=5s >nul 2>&1
+if not errorlevel 1 goto :k8s_autostart_cluster_ready
+echo [k8s] Kubernetes is not reachable -- waiting for it to start ...
+echo   ^(If this is the first time, enable it once: Docker Desktop -^>
+echo   Settings -^> Kubernetes -^> Enable Kubernetes -^> Apply ^& Restart.^)
+set "K8S_WAIT=0"
+
+:k8s_autostart_wait_cluster
+kubectl cluster-info --request-timeout=5s >nul 2>&1
+if not errorlevel 1 goto :k8s_autostart_cluster_ready
+set /a K8S_WAIT+=1
+if %K8S_WAIT% GEQ 24 goto :k8s_autostart_cluster_timeout
+timeout /t 5 >nul
+goto :k8s_autostart_wait_cluster
+
+:k8s_autostart_cluster_timeout
+echo   Kubernetes did not come up within 2 minutes.
+echo   Check Docker Desktop -^> Settings -^> Kubernetes, then
+echo   run.bat again. Continuing with the local menu only.
+goto :k8s_autostart_skip
+
+:k8s_autostart_cluster_ready
+echo   Kubernetes is up.
+
+echo [k8s] deploying production, dev and qs ...
+call :k8s_ensure_images
+if errorlevel 1 goto :k8s_autostart_skip
+call :k8s_sync_secrets
+for %%E in (production dev qs) do (
+    kubectl apply -k "k8s\overlays\%%E" >nul
+    if errorlevel 1 (
+        echo   ERROR: failed to apply %%E. Continuing with the local menu only.
+        goto :k8s_autostart_skip
+    )
+)
+call :k8s_gateway_up
+
+echo [k8s] waiting for production to become ready ...
+kubectl wait --for=condition=Ready pod -l app=rms,component=dashboard -n rms-production --timeout=120s >nul 2>&1
+
+echo.
+echo   production : http://localhost:30080   (opening now)
+echo   dev        : http://localhost:30081   (not opened automatically)
+echo   qs         : http://localhost:30082   (not opened automatically)
+echo.
+start "" "http://localhost:30080"
+goto :k8s_autostart_done
+
+:k8s_autostart_skip
+echo.
+echo   Kubernetes was not brought up. Deploy manually later with:
+echo       run.bat k8s-up
+echo.
+
+:k8s_autostart_done
+exit /b 0
 
 REM ----------------------------------------------------------------
 REM  Make sure the tags the overlays ask for exist.
@@ -600,66 +749,29 @@ echo K8s:    k8s-up ^| k8s-down ^| k8s-status ^| k8s-seed ^| k8s-build ^| k8s-pi
 exit /b 1
 
 REM ----------------------------------------------------------------
-REM  Autostart -- the live system, before the menu.
+REM  Autostart -- Kubernetes, not the local Streamlit process.
 REM
-REM  Two long-running things, each in its own window:
+REM  Production is the one dashboard this opens automatically, and it is
+REM  opened as the Kubernetes Service, not `streamlit run` on 8501 --
+REM  8501 has no login gate of its own to guarantee and no replica count,
+REM  it is just this one process. dev and qs are deployed and reachable
+REM  (:30081 / :30082) but never auto-opened, so nobody mistakes one of
+REM  them for the environment that matters.
 REM
-REM      collector   samples this machine every few seconds
-REM      dashboard   serves the UI and re-checks for new pipeline runs
+REM  The scheduler (the continuous collect->forecast->recommend loop) is
+REM  still not started here -- see menu option 4. It operates on this
+REM  machine's own dataset\metrics.db, independently of what k8s serves.
 REM
-REM  The scheduler runs the collector IN-PROCESS (--with-collector), so a
-REM  sample cannot arrive without the loop that acts on it also being
-REM  alive, and it is one window rather than two.
-REM
-REM  The loop is back on a 15-second cycle, which is only viable because
-REM  the reason it used to fall behind is fixed. It was not the ETL as
-REM  such: the rollup stage resampled across the whole calendar span, so
-REM  a two-day collection gap made it build 12,055 buckets to keep 572,
-REM  and that cost grew as the collection aged whether or not new data had
-REM  arrived. Grouping on a floored timestamp instead produces identical
-REM  rollups from the data alone -- a cycle went from ~13.8s to ~2.5s.
-REM
-REM  Cycles cannot overlap: the interval is the wait AFTER a cycle ends,
-REM  so a slow pass makes the loop late, never concurrent.
-REM
-REM  Forecasts also still refresh on demand -- the dashboard's "Refresh
-REM  data now" button, or `run.bat refresh` -- which is what to use when
-REM  the loop is not running. See orchestration\refresh.py.
-REM
-REM  Closing this menu does not stop either window; close them to stop.
-REM
-REM  This block is reached ONLY on the way in. Every submenu returns to
-REM  :interactive below, which is past it, so nothing here fires twice
-REM  within a session.
+REM  Best-effort throughout: a machine with Docker Desktop closed, or
+REM  Kubernetes never enabled, still gets the local menu -- it just skips
+REM  straight to :interactive with a clear note instead of failing run.bat
+REM  entirely, since CRUD/logger/refresh have nothing to do with k8s.
 REM ----------------------------------------------------------------
 :autostart
 echo.
 echo Starting the live system...
 echo.
-
-REM  Port check rather than a process check: the thing that matters is
-REM  whether something is already serving 8501, and a second Streamlit
-REM  would fail to bind anyway.
-netstat -ano | findstr /r /c:":8501 .*LISTENING" >nul 2>&1
-if errorlevel 1 (
-    start "RMS Dashboard" /D "%CD%" "%VENV_DIR%\Scripts\streamlit.exe" run dashboard\app.py
-    echo   dashboard : starting  -^> http://localhost:8501
-) else (
-    echo   dashboard : already serving -^> http://localhost:8501
-)
-
-REM  Launched unconditionally: the scheduler holds a PID lock in
-REM  data\scheduler.lock and refuses to start a second time on its own.
-REM  Two of them would sample this machine twice into one table, which
-REM  reads downstream as duplicate timestamps and a cadence that never
-REM  happened -- so a redundant one prints why it is stopping and exits.
-start "RMS Scheduler" /D "%CD%" "%VENV_PY%" -m orchestration.scheduler --with-collector
-echo   scheduler : collecting and forecasting every 15s
-echo.
-echo   Both run in their own windows and keep running after this menu
-echo   exits. Close those windows to stop them.
-echo.
-timeout /t 3 >nul
+call :k8s_autostart
 
 REM ----------------------------------------------------------------
 :interactive
@@ -667,13 +779,15 @@ echo ======================================================================
 echo   PREDICTIVE RESOURCE MONITORING SYSTEM
 echo ======================================================================
 echo.
-echo   Dashboard  http://localhost:8501       (its own window)
-echo   Scheduler  collecting + forecasting 15s (its own window)
+echo   Production  http://localhost:30080     (opened automatically)
+echo   Dev         http://localhost:30081     (open manually if needed)
+echo   QS          http://localhost:30082     (open manually if needed)
+echo   Scheduler   not running -- start it with option 4 below
 echo.
 echo   1  Data / CRUD operations (view, create, edit, delete)
 echo   2  Logger (extra sampling options)
 echo   3  Refresh forecasts now (one pipeline pass)
-echo   4  Scheduler (manual, fixed number of cycles)
+echo   4  Scheduler (continuous loop, or a fixed number of cycles)
 echo.
 echo   0  Exit
 echo.
@@ -683,9 +797,10 @@ REM  session that launched it -- the menu only came back when the UI was
 REM  killed. It is a long-running service, so it is started above, in its
 REM  own window. `run.bat dashboard` still runs one in the foreground.
 REM
-REM  Entry 3 remains for a scheduler with different settings -- a fixed
-REM  cycle count, a different interval. It will refuse while the autostart
-REM  one is alive, which is the lock doing its job; stop that window first.
+REM  The scheduler is NOT started automatically -- option 4 is the only
+REM  way it starts. If a second one is launched while one is already
+REM  running, its PID lock in data\scheduler.lock makes the redundant one
+REM  print why it is stopping and exit, rather than double-sampling.
 set /p "CHOICE=Select: "
 if "%CHOICE%"=="1" goto :crud
 if "%CHOICE%"=="2" goto :logger_menu
