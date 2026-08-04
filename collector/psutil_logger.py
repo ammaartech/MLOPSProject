@@ -72,5 +72,30 @@ def run_logger(interval=None, duration=None, verbose=True):
 
 
 if __name__ == "__main__":
-    # quick smoke test: log for 60s at 5s cadence
-    run_logger(interval=5, duration=60)
+    import argparse
+
+    # Runs until Ctrl+C unless told otherwise. This used to be a fixed
+    # 60-second smoke test, which disagreed with every caller: run.bat and
+    # run.sh both announce "press Ctrl+C to stop", and the compose
+    # collector service is `restart: unless-stopped`, so a logger that
+    # exited after a minute was restarted forever. entrypoint.sh already
+    # forwards "$@" here, so the flags below reach the container too.
+    parser = argparse.ArgumentParser(description="Sample this machine into the database.")
+    parser.add_argument("--interval", type=int, default=None,
+                        help="seconds between samples "
+                             "(default: config collector.sample_interval_sec)")
+    parser.add_argument("--duration", type=int, default=None,
+                        help="stop after N seconds (default: run until Ctrl+C)")
+    parser.add_argument("--minutes", type=float, default=None,
+                        help="stop after N minutes; overrides --duration")
+    parser.add_argument("--once", action="store_true",
+                        help="log a single sample and exit")
+    args = parser.parse_args()
+
+    if args.once:
+        log_once()
+    else:
+        duration = args.duration
+        if args.minutes is not None:
+            duration = int(args.minutes * 60)
+        run_logger(interval=args.interval, duration=duration)

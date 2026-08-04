@@ -28,7 +28,7 @@ can be traced back to the exact input data and settings that produced it.
 
 import hashlib
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
 
@@ -67,7 +67,46 @@ def data_fingerprint(df):
 # ----------------------------------------------------------------------
 # Run lifecycle
 # ----------------------------------------------------------------------
+def reconcile_stale_runs():
+    """Close out runs left `running` by a process that never came back.
+
+    `finish_run` is only reached by code that is still executing. Kill the
+    scheduler window, suspend the laptop, restart the container, and the
+    row stays `running` for ever — so the event log claims a pipeline run
+    is in flight days after the process that owned it died. For a system
+    whose argument is that the log and the artifacts cannot disagree, that
+    is exactly the wrong kind of untruth.
+
+    Age is the test, not "is there a newer run". Marking every earlier
+    `running` row dead the moment a new one starts would be wrong the
+    first time someone runs `run.bat pipeline` while the scheduler loop is
+    mid-cycle: both are legitimate, and one would flag the other. A run
+    older than `pipeline.stale_run_minutes` cannot still be live — the
+    whole pass takes about three minutes on this data.
+
+    Returns the number of rows reconciled.
+    """
+    cutoff = (datetime.now()
+              - timedelta(minutes=config.get_int("pipeline.stale_run_minutes")))
+    # The reason is bound, not inlined. SQLite has no implicit
+    # concatenation of adjacent string literals, so splitting a long
+    # message across two source lines the way Python allows produces a
+    # syntax error at the second fragment.
+    return execute_query(
+        """
+        UPDATE pipeline_runs
+           SET status = 'interrupted', finished_at = ?, error = ?
+         WHERE status = 'running' AND started_at < ?
+        """,
+        (datetime.now().isoformat(timespec="seconds"),
+         "process ended before the run finished; "
+         "reconciled when a later run started",
+         cutoff.isoformat(timespec="seconds")),
+    ) or 0
+
+
 def start_run(source_kind, source_detail):
+    reconcile_stale_runs()
     return execute_insert(
         """
         INSERT INTO pipeline_runs

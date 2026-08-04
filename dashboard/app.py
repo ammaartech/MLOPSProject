@@ -58,21 +58,85 @@ role = session["role"]
 # ----------------------------------------------------------------------
 # Cached readers — the dashboard reads, the pipeline writes
 # ----------------------------------------------------------------------
-@st.cache_data(ttl=5)
+# Everything below is keyed on `run_id`, not on a clock.
+#
+# The previous arrangement gave each reader a 5-10 second TTL and then
+# called `st.cache_data.clear()` on every auto-refresh tick, which threw
+# all of it away every ten seconds. Since Streamlit executes EVERY tab
+# body on EVERY rerun — tabs are not lazy — an admin session recomputed
+# the whole dashboard, about five seconds of work, three times a minute.
+# The UI was never not busy.
+#
+# A run id is immutable: `metrics_clean` for run 40 is written once and
+# never changes. So anything derived from it can be cached indefinitely
+# and is still exactly correct. Only `latest_run()` needs a short TTL, to
+# notice that a NEW run has appeared — and it costs 5ms. When a new run
+# lands, every key below changes with it and the caches turn over on
+# their own. That is the whole invalidation strategy.
+# `max_entries` bounds memory. Keying on run id means a new entry every
+# time a pipeline pass completes, and without a bound a dashboard left
+# open for a day would hold every cleaned frame it had ever read. Three is
+# the current run plus the two before it, which covers "did that refresh
+# actually change anything" without hoarding.
+@st.cache_data(show_spinner=False, max_entries=3)
 def clean_frame(run_id=None):
     from pipeline.etl import read_clean
 
     return read_clean(run_id)
 
 
-@st.cache_data(ttl=5)
+@st.cache_data(ttl=5, show_spinner=False)
 def latest_run():
     from pipeline.etl import latest_run as _latest
 
     return _latest()
 
 
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=5, show_spinner=False)
+def raw_sample_count():
+    """Rows in `metrics` — the collector's own heartbeat.
+
+    Distinct from the cleaned row count on purpose. Raw samples climb
+    every few seconds while the collector runs; cleaned rows only move
+    when a pipeline pass completes. Showing both makes it obvious that
+    data is arriving even when the forecast has not been recomputed yet.
+    """
+    from crud.metrics_crud import count_metrics
+
+    return count_metrics()
+
+
+@st.cache_data(show_spinner=False, max_entries=3)
+def recommendation(run_id):
+    """The allocation decision for this run. Shared by Overview and Capacity.
+
+    Both tabs used to call `build_recommendation` themselves, and both ran
+    on every rerun whichever tab was actually on screen — so the most
+    expensive call in the dashboard was made twice per render for one
+    answer. `persist=False` because the dashboard reads; the pipeline
+    writes.
+    """
+    from service.recommender import build_recommendation
+
+    return build_recommendation(clean_frame(run_id), persist=False)
+
+
+# More entries than the others: the Forecast tab's horizon slider makes
+# `steps` part of the key, so one run legitimately produces several.
+@st.cache_data(show_spinner=False, max_entries=32)
+def horizon(target, steps, run_id):
+    """One forecast trajectory, computed once per (target, steps, run).
+
+    This is the single most expensive operation in the system — an
+    iterative rollout that rebuilds features per step — and it was being
+    recomputed for the same target several times in one render.
+    """
+    from serving.predictor import forecast_horizon
+
+    return forecast_horizon(target, steps=steps, df=clean_frame(run_id))
+
+
+@st.cache_data(ttl=10, show_spinner=False)
 def run_history(limit=20):
     from pipeline.etl import run_history as _history
 
@@ -82,7 +146,7 @@ def run_history(limit=20):
     ])
 
 
-@st.cache_data(ttl=10)
+@st.cache_data(show_spinner=False, max_entries=3)
 def quality_checks(run_id):
     rows = execute_query(
         "SELECT check_name, status, value, detail FROM quality_checks "
@@ -91,7 +155,7 @@ def quality_checks(run_id):
     return pd.DataFrame(rows, columns=["check", "status", "value", "detail"])
 
 
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=10, show_spinner=False)
 def registry():
     from tracking.mlflow_tracker import registry as _registry
 
@@ -102,28 +166,32 @@ def registry():
     ])
 
 
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=10, show_spinner=False)
 def champions():
     from tracking.lineage import champions as _champions
 
     return _champions()
 
 
-@st.cache_data(ttl=30)
-def backtest(_frame):
+# Keyed on run_id rather than the frame. Passing a DataFrame meant
+# Streamlit either hashed thousands of rows on every call, or — with the
+# leading-underscore opt-out used here before — skipped hashing entirely
+# and could not tell two different frames apart.
+@st.cache_data(show_spinner=False, max_entries=3)
+def backtest(run_id):
     from evaluation.backtest import combined, run_all
 
-    results = run_all(_frame)
+    results = run_all(clean_frame(run_id))
     return results, combined(results)
 
 
-@st.cache_data(ttl=30)
-def ladder(_frame, target):
+@st.cache_data(show_spinner=False, max_entries=9)
+def ladder(run_id, target):
     from model.baseline import run_ladder
     from model.features import build_features, chronological_split
     import numpy as np
 
-    X, y, meta = build_features(_frame, target)
+    X, y, meta = build_features(clean_frame(run_id), target)
     if X.empty:
         return pd.DataFrame()
     split = chronological_split(X, y, meta)
@@ -133,14 +201,18 @@ def ladder(_frame, target):
     return table
 
 
-@st.cache_data(ttl=5)
-def latest_process_alerts():
-    rows = execute_query(
-        "SELECT ts, breach_rate, process_payload FROM recommendations "
-        "WHERE type = 'process_alert' ORDER BY id DESC LIMIT 5",
-        fetch=True
-    )
-    return rows or []
+@st.cache_data(ttl=5, show_spinner=False)
+def latest_process_alerts(limit=5):
+    """Recent process alerts: (ts, threshold, observed, payload) newest first.
+
+    Read through `service.process_alert.recent()` rather than with a query
+    of its own, so the column overloading that a type discriminator forces
+    — `breach_rate` holding a utilisation, `wanted_percent` holding the
+    threshold — is described in exactly one place.
+    """
+    from service.process_alert import recent
+
+    return recent(limit)
 
 
 # The system writes no log FILE. Every event it has ever produced is a
@@ -315,20 +387,98 @@ st.sidebar.markdown('<div class="rm-side-label">Display</div>',
                     unsafe_allow_html=True)
 window = st.sidebar.slider("Chart window (samples)", 50, 800, 300, step=50)
 
-auto_refresh = st.sidebar.toggle("Auto-refresh live data", value=True)
+# Auto-refresh polls for a NEW RUN. It does not invalidate anything.
+#
+# It used to call st.cache_data.clear() on every tick, which is why the
+# dashboard felt slow: a tick every ten seconds threw away every cached
+# result, and because Streamlit runs all nine tab bodies on every rerun,
+# the entire dashboard was recomputed from scratch three times a minute
+# whether or not anything had changed. Nothing had usually changed —
+# `metrics_clean` only moves when an ETL run completes.
+#
+# Now a tick is a cheap re-read of `latest_run()`. If the run id is the
+# same, every cache key is the same and the page redraws from memory. If
+# a new run has landed, the keys change and exactly the stale entries are
+# recomputed.
+auto_refresh = st.sidebar.toggle(
+    "Auto-refresh", value=True,
+    help="Re-checks for a completed pipeline run every few seconds. "
+         "Cached results are reused until the run id changes.",
+)
 if auto_refresh:
-    st_autorefresh(interval=10000, key="data_refresh")
-    st.cache_data.clear()
-    config.invalidate()
-elif st.sidebar.button("Refresh now", width="stretch"):
+    st_autorefresh(interval=config.get_int("dashboard.refresh_ms"),
+                   key="data_refresh")
+
+if st.sidebar.button("Force full refresh", width="stretch",
+                     help="Drop every cached result and recompute. Only "
+                          "needed after editing config outside this page."):
     st.cache_data.clear()
     config.invalidate()
     st.rerun()
+
+# ----------------------------------------------------------------------
+# Refresh the data — on demand, not on a timer
+# ----------------------------------------------------------------------
+# The collector appends continuously, but raw samples are not a forecast.
+# Turning them into one means running the ETL, rebuilding features and
+# re-forecasting, and that used to happen on a background loop that
+# competed with this page for the same SQLite file and the same CPU.
+#
+# Now it happens when asked. The pass runs DETACHED — the same pattern the
+# Simulation tab uses — so a rerun cannot tear it down and the UI never
+# blocks on it. The auto-refresh poll above notices the new run id when it
+# lands and the caches turn over by themselves.
+st.sidebar.markdown('<div class="rm-side-label">Data</div>',
+                    unsafe_allow_html=True)
+
+_refresh_job = st.session_state.get("refresh_job")
+
+if _refresh_job is not None:
+    _code = _refresh_job.poll()
+    if _code is None:
+        st.sidebar.info("Refreshing in the background...")
+    else:
+        st.session_state.pop("refresh_job", None)
+        if _code == 0:
+            st.sidebar.success("Refresh complete.")
+            st.cache_data.clear()
+        else:
+            st.sidebar.error(
+                f"Refresh exited with code {_code}. See "
+                f"data/twin_logs/refresh.log"
+            )
+elif st.sidebar.button("Refresh data now", width="stretch", type="primary",
+                       help="Run one pipeline pass: ETL, features, forecast, "
+                            "recommendation. Runs in the background."):
+    import subprocess as _subprocess
+    import sys as _sys
+
+    _log_dir = os.path.join(config.DATA_DIR, "twin_logs")
+    os.makedirs(_log_dir, exist_ok=True)
+    _handle = open(os.path.join(_log_dir, "refresh.log"), "w",
+                   encoding="utf-8")
+    st.session_state["refresh_job"] = _subprocess.Popen(
+        [_sys.executable, "-m", "orchestration.refresh"],
+        stdout=_handle, stderr=_subprocess.STDOUT, cwd=ROOT,
+    )
+    _handle.close()
+    st.rerun()
+
+st.sidebar.markdown(
+    f'<div class="rm-side-kv"><span>Raw samples</span>'
+    f'<span>{raw_sample_count()}</span></div>',
+    unsafe_allow_html=True,
+)
 
 frame = clean_frame(run["run_id"])
 if frame.empty:
     st.error("The latest run produced no cleaned rows.")
     st.stop()
+
+# Computed once, here, and read by both Overview and Capacity. Streamlit
+# runs every tab body on every rerun, so anything a tab computes for
+# itself is computed whether or not that tab is on screen.
+recommendation_for_run = recommendation(run["run_id"])
 
 # Which tabs exist depends on who is logged in. The customer surface is
 # the subset an admin also needs — you cannot judge whether an allocation
@@ -360,9 +510,7 @@ if tab_overview is not None:
             "the SLA, priced against static over-provisioning.",
         )
 
-        from service.recommender import build_recommendation
-
-        recommendation = build_recommendation(frame, persist=False)
+        recommendation = recommendation_for_run
 
         theme.section("Financial position")
         columns = st.columns(4)
@@ -431,17 +579,25 @@ if tab_overview is not None:
 
         alerts = latest_process_alerts()
         if alerts:
-            latest_alert = alerts[0]
+            when, threshold, observed, payload = alerts[0]
             st.warning(
-                f"Memory headroom alert at {latest_alert[0]} — live usage "
-                f"crossed the threshold at {latest_alert[1]:.1f}%."
+                f"Memory alert at {when} — usage reached {observed:.1f}%, "
+                f"over the {threshold:.0f}% capacity threshold. The heaviest "
+                f"processes at that moment are below."
             )
             import json
             try:
-                proc_df = pd.DataFrame(json.loads(latest_alert[2]))
-                proc_df.columns = ["PID", "Process", "Memory (MB)"]
-                st.dataframe(proc_df, hide_index=True, width="stretch")
-            except Exception as exc:                              # noqa: BLE001
+                processes = pd.DataFrame(json.loads(payload)).rename(columns={
+                    "pid": "PID", "name": "Process", "rss_mb": "Memory (MB)",
+                })
+                st.dataframe(processes, hide_index=True, width="stretch")
+                theme.note(
+                    "A suggestion, and only a suggestion. Nothing here was "
+                    "stopped and this system has no code path that stops a "
+                    "process — acting irreversibly on a single threshold "
+                    "crossing is the opposite of what the rest of it does."
+                )
+            except (ValueError, TypeError) as exc:
                 theme.note(f"Could not parse the process list: {exc}")
 
         theme.section("Champions serving production")
@@ -457,13 +613,13 @@ if tab_overview is not None:
         )
 
         theme.section("Forecast against allocation")
-        from serving.predictor import forecast_horizon
 
+        default_steps = config.get_int("model.forecast_horizon")
         for target, r in recommendation["recommendations"].items():
             theme.sub(unit_names.get(target, target))
             left, right = st.columns([3, 2])
             with left:
-                trajectory, meta = forecast_horizon(target, df=frame)
+                trajectory, meta = horizon(target, default_steps, run["run_id"])
                 actual_df = recent.copy()
                 actual_df["ts"] = pd.to_datetime(actual_df["ts"])
                 actual_df = actual_df.set_index("ts")[[target]].rename(
@@ -522,11 +678,11 @@ if tab_forecast is not None:
             show_bounds = st.checkbox("Show 95% uncertainty band", value=True,
                                       key="fc_studio_bounds")
 
-        from serving.predictor import forecast_horizon, resolve_champion
-        from service.recommender import recommend_percent
-
-        trajectory, meta = forecast_horizon(fc_target, steps=fc_steps, df=frame)
-        r = recommend_percent(fc_target, df=frame)
+        trajectory, meta = horizon(fc_target, fc_steps, run["run_id"])
+        # The per-resource entry of the shared recommendation, rather than
+        # a second `recommend_percent` call — which would re-run the same
+        # forecast this tab has just read from cache.
+        r = recommendation_for_run["recommendations"].get(fc_target)
 
         if not trajectory.empty:
             cadence = config.get_int("pipeline.nominal_cadence_sec")
@@ -623,6 +779,10 @@ if tab_forecast is not None:
                                   key="sim_spike_slider")
 
             if st.button("Run stress test", type="primary"):
+                from serving.predictor import forecast_horizon
+
+                # Not cacheable by run id: the frame is scaled first, so
+                # this is a different input. It only runs on the click.
                 spiked_frame = frame.copy()
                 spiked_frame[fc_target] = spiked_frame[fc_target] * sim_spike
                 spiked_traj, spiked_meta = forecast_horizon(
@@ -653,32 +813,39 @@ if tab_capacity is not None:
     with tab_capacity:
         theme.page(
             "Capacity",
-            "Current utilisation, the forecast peak and the alert threshold "
-            "for each resource, on one shared 0-100% scale.",
+            "Allocation units for each resource, filled to current usage, "
+            "with the forecast peak and the alert threshold marked. When the "
+            "When the forecast crosses the threshold a proposed additional unit "
+            "appears beside it.",
         )
 
-        threshold_val = config.get_float("policy.capacity_alert_threshold", 80.0)
+        # No default. The key is seeded in DEFAULT_CONFIG, so a missing one
+        # means the database is older than this tab — and a literal here
+        # would let the dashboard draw a threshold the rest of the system
+        # is not using.
+        threshold_val = config.get_float("policy.capacity_alert_threshold")
 
         def get_current_usage(target, fallback_df):
             """The absolute most recent raw metric from the collector."""
             try:
-                from database.connection import get_connection
-                con = get_connection()
-                if con:
-                    df = pd.read_sql_query(
-                        "SELECT * FROM metrics ORDER BY ts DESC LIMIT 1", con)
-                    con.close()
-                    if not df.empty and target in df.columns:
-                        return float(df[target].iloc[0])
-            except Exception:                                     # noqa: BLE001
+                import sqlite3
+                import config
+                con = sqlite3.connect(config.DB_PATH)
+                con.row_factory = sqlite3.Row
+                cur = con.cursor()
+                cur.execute("SELECT * FROM metrics ORDER BY ts DESC LIMIT 1")
+                row = cur.fetchone()
+                con.close()
+                if row and target in row.keys():
+                    return float(row[target])
+            except Exception:
                 pass
 
             if not fallback_df.empty and target in fallback_df.columns:
                 return float(fallback_df[target].iloc[-1])
             return 0.0
 
-        from service.recommender import build_recommendation
-        recs = build_recommendation(frame, persist=False)
+        recs = recommendation_for_run
 
         resource_info = {
             "cpu_percent": {"name": "CPU", "capacity_key": "node.vcpus",
@@ -689,7 +856,26 @@ if tab_capacity is not None:
                                "unit": "GB"},
         }
 
-        rows, over_threshold = [], []
+        def recommended_addition(allocated_units, capacity, threshold):
+            """Extra capacity so the RECOMMENDED allocation clears `threshold`.
+
+            This does not decide an allocation — `service/recommender.py`
+            already did that, forecast plus headroom plus the safety floor,
+            and `allocated_units` is its answer. All that happens here is
+            unit arithmetic: if that allocation is to sit at or below the
+            threshold, the node has to be this big, and it currently is
+            not. Returns (extra_units, extra_percent_of_one_node) or None
+            when the existing node is sufficient.
+            """
+            if threshold <= 0:
+                return None
+            required = allocated_units / (threshold / 100.0)
+            extra = required - capacity
+            if extra <= 0:
+                return None
+            return extra, 100.0 * extra / capacity
+
+        units, rows, over_threshold = [], [], []
         for target, info in resource_info.items():
             if target not in recs["recommendations"]:
                 continue
@@ -699,15 +885,40 @@ if tab_capacity is not None:
             current_pct = get_current_usage(target, frame)
             forecast_pct = r["forecast_peak"]
 
-            facts = [
-                ("Current", f"{current_pct:.1f}%"),
-                ("Forecast peak", f"{forecast_pct:.1f}%"),
-                ("Threshold", f"{threshold_val:.0f}%"),
-                ("Allocation", f"{r['recommended_percent']}% "
-                               f"({r['units']:.2f} {info['unit']})"),
-            ]
+            units.append({
+                "name": info["name"],
+                "fill": current_pct,
+                "threshold": threshold_val,
+                "forecast": forecast_pct,
+                "lines": [
+                    f"<b>{current_pct:.1f}%</b> now",
+                    f"forecast {forecast_pct:.1f}%",
+                    f"{capacity} {info['unit']}",
+                ],
+            })
+
+            addition = recommended_addition(r["units"], capacity, threshold_val)
             if forecast_pct > threshold_val:
                 over_threshold.append(info["name"])
+
+            # The proposal only appears when the forecast actually crosses
+            # the line AND the recommended allocation genuinely does not
+            # fit under it. A unit drawn on every render would stop meaning
+            # anything the moment it was always there.
+            if forecast_pct > threshold_val and addition is not None:
+                extra_units, extra_pct = addition
+                units.append({
+                    "name": "Recommended addition",
+                    "fill": min(100.0, extra_pct),
+                    "threshold": None,
+                    "forecast": None,
+                    "addition": True,
+                    "lines": [
+                        f"<b>+{extra_units:.2f}</b> {info['unit']}",
+                        f"for {info['name']}",
+                        f"+{extra_pct:.0f}% of a node",
+                    ],
+                })
 
             rows.append({
                 "name": info["name"],
@@ -715,23 +926,46 @@ if tab_capacity is not None:
                 "current": current_pct,
                 "forecast": forecast_pct,
                 "threshold": threshold_val,
-                "facts": facts,
+                "facts": [
+                    ("Current", f"{current_pct:.1f}%"),
+                    ("Forecast peak", f"{forecast_pct:.1f}%"),
+                    ("Threshold", f"{threshold_val:.0f}%"),
+                    ("Allocation", f"{r['recommended_percent']}% "
+                                   f"({r['units']:.2f} {info['unit']})"),
+                ],
             })
 
-        theme.section("Utilisation against capacity")
-        theme.bullet(rows)
+        theme.section("Allocation units")
+        theme.cylinders(units)
         theme.legend([
             (theme.SERIES[0], "Current utilisation"),
             (theme.INK, "Forecast peak"),
             (theme.CRITICAL, f"Alert threshold ({threshold_val:.0f}%)"),
+            (theme.ACCENT, "Recommended addition (proposed, not measured)"),
         ])
 
         if over_threshold:
             st.warning(
                 "Forecast peak crosses the alert threshold for: "
                 + ", ".join(over_threshold)
-                + ". The allocation below already includes the safety floor."
+                + ". Any addition shown is sized so the recommendation from "
+                  "the recommender — forecast, headroom and safety floor "
+                  "included — fits under the threshold."
             )
+        else:
+            st.success(
+                f"No resource is forecast to cross {threshold_val:.0f}%. The "
+                f"current node absorbs the forecast peak, so no addition is "
+                f"proposed."
+            )
+
+        theme.section("Utilisation against capacity")
+        theme.note(
+            "The same three numbers on one horizontal scale. The cylinders "
+            "above show each resource as a vessel; this shows them against "
+            "each other."
+        )
+        theme.bullet(rows)
 
         theme.section("Detail")
         detail_rows = []
@@ -768,61 +1002,127 @@ if tab_twin is not None:
             "policy on the result.",
         )
 
-        SCENARIOS = [
-            "gap_injection",
-            "regime_change",
-            "sustained_spike",
-            "cadence_drift",
-            "multi_host_shift",
-        ]
+        import subprocess
+        import sys as _sys
+
+        from collector.scenario_generator import SCENARIOS
+        from orchestration.run_twin import DEFAULT_DB_TEMPLATE
+
+        LOG_DIR = os.path.join(config.DATA_DIR, "twin_logs")
+
+        # Why this runs detached instead of inline
+        # ---------------------------------------
+        # The earlier version called subprocess.run() and waited. A twin
+        # run trains three models and replays the whole backtest, which
+        # takes the better part of a minute — and the sidebar's
+        # auto-refresh reruns this script every ten seconds. Streamlit
+        # abandons the running script when a rerun arrives, so the call
+        # was being torn down mid-flight and its output discarded: the
+        # work sometimes finished, but nothing on screen ever said so.
+        #
+        # Detaching inverts the problem. The child owns its own lifetime
+        # and writes to a log file; each auto-refresh becomes a poll of
+        # `poll()` rather than an interruption. The log is what gets shown
+        # on failure, which is also how the real error becomes visible
+        # instead of a truncated stderr.
+        def twin_log_path(name):
+            os.makedirs(LOG_DIR, exist_ok=True)
+            return os.path.join(LOG_DIR, f"{name}.log")
+
+        def read_log_tail(path, lines=40):
+            if not os.path.exists(path):
+                return "(no output yet)"
+            try:
+                with open(path, "r", encoding="utf-8", errors="replace") as handle:
+                    return "".join(handle.readlines()[-lines:]) or "(empty)"
+            except OSError as exc:
+                return f"(log unreadable: {exc})"
+
+        running = st.session_state.get("twin_job")
 
         col_sel, col_btn = st.columns([3, 1])
         with col_sel:
             scenario = st.selectbox(
                 "Scenario",
-                SCENARIOS,
-                help="gap_injection: drops 20 min of samples | "
-                     "regime_change: idle to high, as a step | "
-                     "sustained_spike: gradual ramp to 90%+ | "
+                list(SCENARIOS),
+                help="regime_change: idle to high, as a step | "
+                     "sustained_spike: gradual ramp past 90%, held | "
+                     "gap_injection: a collection break cut out mid-run | "
                      "cadence_drift: sampling interval varies | "
-                     "multi_host_shift: shifted baseline",
+                     "multi_host_shift: the same shape, busier baseline",
             )
         with col_btn:
             st.write("")
             st.write("")
-            run_twin_btn = st.button("Run simulation", type="primary",
-                                     width="stretch")
+            start = st.button("Run simulation", type="primary",
+                              width="stretch", disabled=running is not None)
 
-        twin_db = f"data/metrics_twin_{scenario}.db"
+        twin_db = DEFAULT_DB_TEMPLATE.format(scenario=scenario)
 
-        if run_twin_btn:
-            import subprocess, sys as _sys
-            gen_cmd = [
-                _sys.executable, "-m", "collector.scenario_generator",
-                "--scenario", scenario,
-                "--db", twin_db,
-            ]
-            run_cmd = [
-                _sys.executable, "-m", "orchestration.run_twin",
-                "--scenario", scenario,
-                "--db", twin_db,
-            ]
-            with st.status(f"Running twin for **{scenario}**…", expanded=True) as status:
-                st.write("Generating synthetic data…")
-                r1 = subprocess.run(gen_cmd, capture_output=True, text=True)
-                if r1.returncode != 0:
-                    st.error(f"Scenario generator failed:\n```\n{r1.stderr}\n```")
-                    status.update(label="Failed", state="error")
+        theme.note(
+            "Every parameter of every scenario lives in the config table "
+            "under <code>twin.*</code>, so retuning a scenario until it "
+            "says something flattering leaves a dated row in "
+            "<code>config_history</code>. The run writes to its own "
+            "database and its own model directory — it cannot reach the "
+            "collected data."
+        )
+
+        if start:
+            log_path = twin_log_path(scenario)
+            handle = open(log_path, "w", encoding="utf-8")
+            process = subprocess.Popen(
+                [_sys.executable, "-m", "orchestration.run_twin",
+                 "--scenario", scenario, "--db", twin_db, "--generate"],
+                stdout=handle, stderr=subprocess.STDOUT, cwd=ROOT,
+            )
+            # The child holds its own duplicate of the descriptor, so the
+            # parent's copy is dead weight — and a dashboard left open for
+            # a day would otherwise leak one per run.
+            handle.close()
+            st.session_state["twin_job"] = {
+                "process": process, "scenario": scenario,
+                "log": log_path, "db": twin_db,
+            }
+            st.rerun()
+
+        # ---- poll a run already in flight ---------------------------------
+        if running is not None:
+            code = running["process"].poll()
+            if code is None:
+                st.info(
+                    f"Simulation running for **{running['scenario']}** — "
+                    f"generating data, then twelve stages, then the "
+                    f"walk-forward replay. This page polls until it finishes."
+                )
+                with st.expander("Live output", expanded=True):
+                    st.code(read_log_tail(running["log"]), language=None)
+                if st.button("Stop this run"):
+                    running["process"].terminate()
+                    st.session_state.pop("twin_job", None)
+                    st.rerun()
+            else:
+                st.session_state.pop("twin_job", None)
+                if code == 0:
+                    st.success(f"Simulation complete for "
+                               f"{running['scenario']}.")
+                    st.cache_data.clear()
                 else:
-                    st.write("Running 12-stage pipeline…")
-                    r2 = subprocess.run(run_cmd, capture_output=True, text=True)
-                    if r2.returncode != 0:
-                        st.error(f"Twin runner failed:\n```\n{r2.stderr}\n```")
-                        status.update(label="Failed", state="error")
-                    else:
-                        status.update(label="Complete", state="complete")
-                        st.cache_data.clear()
-                        st.rerun()
+                    st.error(
+                        f"The twin run for {running['scenario']} exited with "
+                        f"code {code}. The full output is below — this is the "
+                        f"process's own log, not a truncated stderr."
+                    )
+                    st.code(read_log_tail(running["log"], lines=80),
+                            language=None)
+
+        # The last run's log stays readable after it finishes: a run that
+        # succeeded can still have said something worth reading, and the
+        # promotion gate's verdicts only appear there.
+        last_log = twin_log_path(scenario)
+        if running is None and os.path.exists(last_log):
+            with st.expander(f"Output from the last {scenario} run"):
+                st.code(read_log_tail(last_log, lines=120), language=None)
 
         # ---- Read results from the twin DB if it exists -------------------
         import os as _os, sqlite3 as _sqlite3
@@ -849,8 +1149,22 @@ if tab_twin is not None:
             latest_ts = (df_runs["timestamp"].iloc[0]
                          if "timestamp" in df_runs.columns else "—")
 
+            # twin_runs APPENDS a row per policy on every run, so the table
+            # holds the whole history. Comparing policies means comparing
+            # them within ONE run — across runs the policy column repeats,
+            # which duplicates every bar and every scatter point and makes
+            # the "Last run" note above a lie. The full history is still
+            # one expander away, at the bottom of this tab.
+            if "timestamp" in df_runs.columns:
+                latest_df = df_runs[df_runs["timestamp"] == latest_ts]
+            else:
+                latest_df = df_runs
+
             theme.section("Policy comparison")
-            theme.note(f"Last run {latest_ts}.")
+            theme.note(
+                f"Last run {latest_ts} — {len(latest_df)} policies. "
+                f"{len(df_runs)} rows recorded for this scenario in total."
+            )
 
             POLICY_COLS = {
                 "policy": "Policy",
@@ -859,9 +1173,16 @@ if tab_twin is not None:
                 "saving_pct": "Saving %",
                 "sla_met": "SLA met",
             }
-            display_cols = [c for c in POLICY_COLS if c in df_runs.columns]
+            display_cols = [c for c in POLICY_COLS if c in latest_df.columns]
             if display_cols:
-                display_df = df_runs[display_cols].rename(columns=POLICY_COLS)
+                display_df = latest_df[display_cols].rename(columns=POLICY_COLS)
+                # Stored as an integer 0/1; the backtest prints yes/no and
+                # this is the same table, so it reads the same way.
+                if "SLA met" in display_df.columns:
+                    display_df = display_df.assign(
+                        **{"SLA met": display_df["SLA met"].map(
+                            lambda v: "yes" if v else "no")}
+                    )
 
                 # The tint marks the policy that uses no model at all. It is
                 # redundant with the Policy column it reads, deliberately —
@@ -874,23 +1195,23 @@ if tab_twin is not None:
                 st.dataframe(display_df.style.apply(_highlight, axis=1),
                              hide_index=True, width="stretch")
 
-            if {"policy", "dollars_per_month"}.issubset(df_runs.columns):
+            if {"policy", "dollars_per_month"}.issubset(latest_df.columns):
                 theme.sub("Monthly cost by policy")
-                chart_df = (df_runs[["policy", "dollars_per_month"]]
+                chart_df = (latest_df[["policy", "dollars_per_month"]]
                             .set_index("policy")
                             .sort_values("dollars_per_month"))
                 st.bar_chart(chart_df, color=theme.series(1), height=260,
                              horizontal=True)
 
-            if {"worst_breach_pct", "saving_pct", "policy"}.issubset(df_runs.columns):
+            if {"worst_breach_pct", "saving_pct", "policy"}.issubset(latest_df.columns):
                 theme.sub(
                     "Saving against worst breach",
                     "Up is cheaper, right is less reliable. The useful "
                     "policies sit top-left; anything far right buys its "
                     "saving out of the SLA budget.",
                 )
-                scatter_df = df_runs[["policy", "worst_breach_pct",
-                                      "saving_pct"]].set_index("policy")
+                scatter_df = latest_df[["policy", "worst_breach_pct",
+                                        "saving_pct"]].set_index("policy")
                 st.scatter_chart(scatter_df, x="worst_breach_pct",
                                  y="saving_pct", color=theme.series(1),
                                  height=300)
@@ -973,7 +1294,7 @@ if tab_model is not None:
             "worth deploying if it beats the strongest simple alternative — "
             "not the most convenient one."
         )
-        table = ladder(frame, choice)
+        table = ladder(run["run_id"], choice)
         if not table.empty:
             st.dataframe(table, width="stretch", hide_index=True)
             best = table.iloc[0]
@@ -1049,7 +1370,7 @@ if tab_cost is not None:
         )
 
         with st.spinner("Replaying allocation decisions..."):
-            results, node = backtest(frame)
+            results, node = backtest(run["run_id"])
 
         if not node.empty:
             st.dataframe(node, width="stretch", hide_index=True)

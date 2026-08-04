@@ -1,4 +1,4 @@
-from crud.query import execute_query
+from crud.query import execute_insert, execute_query
 
 _EDITABLE = {
     "cpu_percent", "mem_percent", "mem_used_mb",
@@ -6,8 +6,37 @@ _EDITABLE = {
 }
 
 
+# The CSV mirror is imported lazily inside each writer. `conversion.csv_export`
+# reaches back into `pipeline.sources` for a full rebuild, which imports this
+# package again — a module-level import here would be circular. Deferring it
+# also means a failure to load the exporter cannot stop a database write.
+def _mirror_insert(record, row_id):
+    try:
+        from conversion.csv_export import mirror_insert
+
+        mirror_insert(record, row_id)
+    except Exception:                                         # noqa: BLE001
+        pass
+
+
+def _mirror_rebuild():
+    try:
+        from conversion.csv_export import mirror_rebuild
+
+        mirror_rebuild()
+    except Exception:                                         # noqa: BLE001
+        pass
+
+
 # ---------- CREATE ----------
 def create_metric(record):
+    """Insert one sample. Returns its new id.
+
+    `execute_insert`, not `execute_query`: the latter reports a row count,
+    so every successful insert came back as 1 and the CRUD console
+    reported "created record 1" whatever the real key was. The collector
+    ignores the return value either way.
+    """
     query = """
         INSERT INTO metrics
         (ts, cpu_percent, mem_percent, mem_used_mb, disk_read_mb_s, disk_write_mb_s)
@@ -21,7 +50,10 @@ def create_metric(record):
         record["disk_read_mb_s"],
         record["disk_write_mb_s"],
     )
-    return execute_query(query, values)
+    new_id = execute_insert(query, values)
+    if new_id:
+        _mirror_insert(record, new_id)
+    return new_id
 
 
 # ---------- READ ----------
@@ -54,15 +86,24 @@ def update_metric(metric_id, field, value):
     if field not in _EDITABLE:          # whitelist = no injection via column name
         print("Invalid field:", field)
         return None
-    return execute_query(
+    changed = execute_query(
         f"UPDATE metrics SET {field} = ? WHERE id = ?", (value, metric_id)
     )
+    if changed:
+        _mirror_rebuild()
+    return changed
 
 
 # ---------- DELETE ----------
 def delete_metric(metric_id):
-    return execute_query("DELETE FROM metrics WHERE id = ?", (metric_id,))
+    removed = execute_query("DELETE FROM metrics WHERE id = ?", (metric_id,))
+    if removed:
+        _mirror_rebuild()
+    return removed
 
 
 def purge_before(cutoff_ts):
-    return execute_query("DELETE FROM metrics WHERE ts < ?", (cutoff_ts,))
+    removed = execute_query("DELETE FROM metrics WHERE ts < ?", (cutoff_ts,))
+    if removed:
+        _mirror_rebuild()
+    return removed

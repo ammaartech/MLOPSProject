@@ -124,16 +124,51 @@ class StreamSource(Source):
         self.watermark_path = watermark_path
         self.advance = advance
 
+    @staticmethod
+    def _usable(value):
+        """Is `value` a timestamp this watermark can safely compare against?
+
+        The comparison in `read()` is `ts > ?` against a TEXT column, so
+        SQLite compares lexicographically. That is correct for ISO-8601
+        and catastrophic for anything else: a watermark of 'gyg' — which
+        is what one hand-typed row left behind — sorts above every digit,
+        so `'2026-07-31T...' > 'gyg'` is false and the stream returned
+        NOTHING, permanently. The collector kept appending, the scheduler
+        kept reporting "+0 rows", and nothing surfaced as an error because
+        an empty incremental read is a legitimate answer.
+
+        One malformed row must not be able to wedge the stream for ever,
+        so a watermark that will not parse is treated as absent.
+        """
+        if not value:
+            return False
+        return not pd.isna(pd.to_datetime(value, errors="coerce", utc=True))
+
     def _load_watermark(self):
         if not os.path.exists(self.watermark_path):
             return None
         try:
             with open(self.watermark_path) as fh:
-                return json.load(fh).get("last_ts")
+                stored = json.load(fh).get("last_ts")
         except (OSError, ValueError):
             return None
 
+        if stored is not None and not self._usable(stored):
+            print(f"  [stream] discarding unusable watermark {stored!r} — "
+                  f"it cannot be compared against a timestamp, so every "
+                  f"incremental read would return nothing. Reading from "
+                  f"the start.")
+            return None
+        return stored
+
     def _save_watermark(self, last_ts):
+        # Refuse to persist a value that would wedge the next read. The
+        # caller passes the newest `ts` it saw; if that is unparseable the
+        # right move is to leave the previous watermark in place.
+        if not self._usable(last_ts):
+            print(f"  [stream] refusing to save unusable watermark "
+                  f"{last_ts!r}")
+            return
         with open(self.watermark_path, "w") as fh:
             json.dump(
                 {"last_ts": last_ts, "updated_at": datetime.now().isoformat()},

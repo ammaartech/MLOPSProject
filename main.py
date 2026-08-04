@@ -58,59 +58,16 @@ def collector_menu():
 
 
 def data_menu():
-    from crud.metrics_crud import (
-        count_metrics, delete_metric, purge_before, read_all, read_latest,
-        update_metric,
-    )
+    """The CRUD surface, shared with `run.bat` option 1.
 
-    def show(rows):
-        if not rows:
-            print("No records found.")
-            return
-        print(f"\n{'ID':<5}{'Timestamp':<22}{'CPU%':>7}{'MEM%':>7}{'DISK%':>7}")
-        print("-" * 50)
-        for r in rows:
-            print(f"{r[0]:<5}{r[1]:<22}{r[2]:>7.1f}{r[3]:>7.1f}{r[5]:>7.1f}")
+    Both menus call into `crud.console` rather than each keeping their own
+    copy of the prompts — the version that lived here parsed input with a
+    bare `int(input(...))`, so one mistyped record id raised ValueError
+    straight through this menu and out of `main()`, ending the session.
+    """
+    from crud import console
 
-    while True:
-        print("\n---------- Data / CRUD ----------")
-        print("1. View all records")
-        print("2. View latest N records")
-        print("3. Total record count")
-        print("4. Update a field on a record")
-        print("5. Delete a record")
-        print("6. Purge records before a timestamp")
-        print("7. Export to CSV")
-        print("8. Back")
-
-        match input("Enter your choice: ").strip():
-            case "1":
-                show(read_all())
-            case "2":
-                show(read_latest(int(input("How many? "))))
-            case "3":
-                print("Total records:", count_metrics())
-            case "4":
-                record_id = int(input("Record ID: "))
-                field = input("Field: ").strip()
-                print("Updated." if update_metric(field=field, metric_id=record_id,
-                                                  value=float(input("New value: ")))
-                      else "Update failed.")
-            case "5":
-                print("Deleted." if delete_metric(int(input("Record ID: ")))
-                      else "Delete failed.")
-            case "6":
-                cutoff = input("Delete records before (ISO timestamp): ").strip()
-                print(f"Purged {purge_before(cutoff)} record(s).")
-            case "7":
-                from conversion.csv_export import export_all
-
-                for name, result in export_all().items():
-                    print(f"  {name:22s} {result.get('path', result.get('error'))}")
-            case "8":
-                return
-            case _:
-                print("Invalid choice.")
+    console.menu()
 
 
 def pipeline_menu():
@@ -393,7 +350,7 @@ def main():
         print("  PREDICTIVE RESOURCE MONITORING SYSTEM")
         print("=" * 56)
         print("1. Collector          (gather metrics)")
-        print("2. Data / CRUD        (view, edit, export)")
+        print("2. Data / CRUD        (view, create, edit, delete)")
         print("3. Pipeline           (stages 1-6: ETL + quality gate)")
         print("4. Model              (stages 7-11: features -> training)")
         print("5. Serving            (stage 12: gate, predict, drift)")

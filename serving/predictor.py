@@ -116,17 +116,37 @@ def predict(target, df=None, log=True):
             return None, {"error": f"model file missing for "
                                    f"{champion['model_id']}"}
 
-        served_version = info.get("version_id")
-        trained_version = bundle.get("feature_version")
-        if served_version and trained_version and served_version != trained_version:
+        # Compare DEFINITIONS, not materialisations.
+        #
+        # This used to compare `version_id`, which hashes the data
+        # fingerprint alongside the feature definition. The data
+        # fingerprint changes every time the collector appends a row, so a
+        # promoted model stopped being servable within seconds of
+        # promotion and could never recover: the error advised "re-run the
+        # feature store", and doing that produced another new fingerprint
+        # and the same refusal. Only baseline champions, which skip this
+        # branch entirely, ever served.
+        #
+        # The guard is meant to catch train/serve SKEW — features that
+        # mean something different now than they did at training. That is
+        # the column set and the feature-defining config, which is exactly
+        # what `definition_id` hashes and what does not move when data
+        # arrives.
+        served = info.get("definition_id")
+        trained = bundle.get("feature_definition")
+        if served and trained and served != trained:
             return None, {
                 "error": (
-                    f"feature version mismatch: champion was trained on "
-                    f"{trained_version}, online store holds {served_version}. "
-                    f"Refusing to serve rather than predict from mismatched "
-                    f"inputs. Re-run the feature store."
+                    f"feature definition mismatch: champion was trained on "
+                    f"{trained}, online store holds {served}. Refusing to "
+                    f"serve rather than predict from mismatched inputs. "
+                    f"Retrain this target: python -m orchestration.run_pipeline"
                 )
             }
+        # A model trained before `feature_definition` was recorded cannot
+        # be compared this way. It is not left unguarded: the column check
+        # immediately below is the concrete protection, and it rejects any
+        # vector missing a feature the model needs.
 
         missing = [c for c in bundle["features"] if c not in row.columns]
         if missing:
@@ -139,7 +159,10 @@ def predict(target, df=None, log=True):
             "algorithm": champion["algorithm"],
             "predictor": "trained model",
             "ts": info.get("ts"),
-            "feature_version": trained_version,
+            # The materialisation the model trained on, for lineage. The
+            # compatibility check above uses the definition id instead.
+            "feature_version": bundle.get("feature_version"),
+            "feature_definition": trained,
         }
 
     meta["predicted"] = round(value, 4)
@@ -166,6 +189,32 @@ def predict_all(df=None, log=True):
 # ----------------------------------------------------------------------
 # Multi-step horizon
 # ----------------------------------------------------------------------
+def _feature_span():
+    """Rows of history the newest feature vector can possibly depend on."""
+    lags = config.get_json("features.lags") or [0]
+    return (max(int(l) for l in lags)
+            + config.get_int("features.roll_window")
+            + config.get_int("features.target_shift"))
+
+
+def _horizon_context(df):
+    """The tail of `df` that the iterative forecast actually needs.
+
+    Returns the whole frame unchanged when the configured context is not
+    safely larger than the feature span, so this can only ever be a
+    speed-up — never a silent change to what the model sees.
+    """
+    keep = config.get_int("model.horizon_context_rows")
+    span = _feature_span()
+
+    # The margin is doubled deliberately: the span is the minimum, and a
+    # segment boundary inside the tail costs rows that the groupby then
+    # cannot use. Anything less than this and we do not trim at all.
+    if keep <= 0 or keep < span * 2 or len(df) <= keep:
+        return df
+    return df.iloc[-keep:].reset_index(drop=True)
+
+
 def forecast_horizon(target, steps=None, df=None):
     """Iterative multi-step forecast. Returns a trajectory DataFrame.
 
@@ -220,7 +269,24 @@ def forecast_horizon(target, steps=None, df=None):
     if bundle is None:
         return pd.DataFrame(), {"error": "model file missing"}
 
-    working = df.copy()
+    # Only the TAIL is needed, and the difference is not small.
+    #
+    # `build_serving_row` reconstructs every feature — lags, rolling
+    # windows, interactions, encoding — across the whole frame it is
+    # given, and then keeps a single row. This loop calls it once per
+    # horizon step, so a 20-step forecast rebuilt 2,500+ rows of features
+    # twenty times to use twenty rows. On the dashboard that was ~0.9s per
+    # call, paid five times per render, and it grew with the collection.
+    #
+    # The last row's features depend on at most `max(features.lags) +
+    # features.roll_window` rows before it, all inside its own segment.
+    # Keeping a generous multiple of that is exact, not approximate: rows
+    # trimmed away could not have influenced the vector being built.
+    # `_horizon_context()` refuses to trim when the configured window is
+    # not comfortably larger than that span, so a config change that makes
+    # the tail too short falls back to the full frame rather than quietly
+    # changing the forecast.
+    working = _horizon_context(df).copy()
     predictions = []
     for step in range(1, steps + 1):
         row, info = build_serving_row(working, target)

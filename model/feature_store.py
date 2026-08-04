@@ -48,7 +48,15 @@ from model.features import build_features, build_serving_row
 # Versioning
 # ----------------------------------------------------------------------
 def version_id(target, feature_columns, data_fingerprint=None):
-    """Stable short id for one (target, feature definition, data) triple."""
+    """Stable short id for one (target, feature definition, data) triple.
+
+    This identifies a MATERIALISATION — one specific training set, built
+    from one specific snapshot of the data. It is the right key for the
+    offline store, where "which rows" is exactly the question.
+
+    It is the wrong key for a train/serve compatibility check. See
+    `definition_id`.
+    """
     import hashlib
 
     payload = json.dumps({
@@ -56,6 +64,40 @@ def version_id(target, feature_columns, data_fingerprint=None):
         "features": sorted(feature_columns),
         "config": config.feature_fingerprint(),
         "data": data_fingerprint or "",
+    }, separators=(",", ":"))
+    return hashlib.sha256(payload.encode()).hexdigest()[:12]
+
+
+def definition_id(target, feature_columns):
+    """Stable short id for what a feature vector MEANS, ignoring the data.
+
+    Why this is separate from `version_id`
+    --------------------------------------
+    The serving path refuses to predict when the champion's features do
+    not match the ones the online store holds, which is right: a model
+    fed a differently-shaped or differently-defined vector produces a
+    number that looks fine and means nothing.
+
+    That check used to compare `version_id`, which hashes the data
+    fingerprint along with the definition. The data fingerprint changes
+    every time the collector appends a row — so a trained champion became
+    unservable within seconds of being promoted, and stayed that way
+    until it was retrained AND re-promoted on the newest snapshot. The
+    symptom was `cpu_percent  n/a - feature version mismatch` on every
+    cycle, with the advice "re-run the feature store", which could never
+    resolve it: refreshing the store produced yet another new data
+    fingerprint.
+
+    Train/serve skew is a question about DEFINITIONS — the feature list,
+    the lag depths, the rolling window, the target shift. Those are the
+    target, the column set, and `config.feature_fingerprint()`, and none
+    of them move when a sample arrives. That is what this hashes.
+    """
+    import hashlib
+
+    payload = json.dumps({
+        "target": target,
+        "config": config.feature_fingerprint(),
     }, separators=(",", ":"))
     return hashlib.sha256(payload.encode()).hexdigest()[:12]
 
@@ -70,17 +112,19 @@ def materialise(X, y, meta, target, run_id=None, data_fingerprint=None):
 
     columns = list(X.columns)
     version = version_id(target, columns, data_fingerprint)
+    definition = definition_id(target, columns)
 
     execute_query(
         """
         INSERT OR REPLACE INTO feature_versions
             (version_id, target, feature_list, n_features, n_rows,
-             config_fingerprint, data_fingerprint, run_id, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+             config_fingerprint, data_fingerprint, run_id, created_at,
+             definition_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (version, target, json.dumps(columns), len(columns), len(X),
          config.feature_fingerprint(), data_fingerprint, run_id,
-         datetime.now().isoformat(timespec="seconds")),
+         datetime.now().isoformat(timespec="seconds"), definition),
     )
 
     timestamps = meta.get("timestamps")
@@ -111,6 +155,7 @@ def materialise(X, y, meta, target, run_id=None, data_fingerprint=None):
 
     return {
         "version_id": version,
+        "definition_id": definition,
         "target": target,
         "n_features": len(columns),
         "n_rows": len(X),
@@ -201,38 +246,53 @@ def list_versions(target=None):
 # ----------------------------------------------------------------------
 # Online store
 # ----------------------------------------------------------------------
-def write_online(target, feature_row, version, ts):
-    """Publish the current feature vector for `target`."""
+def write_online(target, feature_row, version, ts, definition=None):
+    """Publish the current feature vector for `target`.
+
+    Both ids are stored. `version_id` says which data snapshot this vector
+    was built alongside — useful for tracing. `definition_id` says what
+    the vector MEANS, and is the one the serving compatibility check
+    compares, because it does not move when a sample arrives.
+    """
     values = {c: _clean(feature_row.iloc[0][c]) for c in feature_row.columns}
+    if definition is None:
+        definition = definition_id(target, list(feature_row.columns))
     execute_query(
         """
         INSERT OR REPLACE INTO feature_online
-            (target, version_id, ts, features, updated_at)
-        VALUES (?, ?, ?, ?, ?)
+            (target, version_id, ts, features, updated_at, definition_id)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
         (target, version,
          ts.isoformat() if hasattr(ts, "isoformat") else str(ts),
          json.dumps(values),
-         datetime.now().isoformat(timespec="seconds")),
+         datetime.now().isoformat(timespec="seconds"), definition),
     )
-    return {"target": target, "version_id": version, "ts": str(ts),
+    return {"target": target, "version_id": version,
+            "definition_id": definition, "ts": str(ts),
             "n_features": len(values)}
 
 
 def get_online_features(target):
     """The current feature vector for inference. Returns (frame, meta)."""
     rows = execute_query(
-        "SELECT version_id, ts, features, updated_at FROM feature_online "
-        "WHERE target = ?",
+        "SELECT version_id, ts, features, updated_at, definition_id "
+        "FROM feature_online WHERE target = ?",
         (target,), fetch=True,
     )
     if not rows:
         return None, {"error": f"no online features for {target}; "
                                f"run refresh_online()"}
-    version, ts, payload, updated = rows[0]
+    version, ts, payload, updated, definition = rows[0]
     values = json.loads(payload)
+    # A row written before `definition_id` existed has NULL there. Derive
+    # it from the columns actually present rather than reporting None,
+    # which the serving check would read as "cannot compare".
+    if not definition:
+        definition = definition_id(target, list(values))
     return pd.DataFrame([values]), {
-        "version_id": version, "ts": ts, "updated_at": updated,
+        "version_id": version, "definition_id": definition,
+        "ts": ts, "updated_at": updated,
         "feature_columns": list(values),
     }
 
@@ -245,8 +305,12 @@ def refresh_online(df, target_list=None, data_fingerprint=None):
         if row is None:
             published.append({"target": target, "error": info.get("error")})
             continue
-        version = version_id(target, list(row.columns), data_fingerprint)
-        published.append(write_online(target, row, version, info["ts"]))
+        columns = list(row.columns)
+        published.append(write_online(
+            target, row,
+            version_id(target, columns, data_fingerprint), info["ts"],
+            definition=definition_id(target, columns),
+        ))
     return published
 
 
