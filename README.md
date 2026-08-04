@@ -10,7 +10,7 @@ prediction.
 ---
 
 ## Quick start
-## Start Guide
+## start guide 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
@@ -98,20 +98,20 @@ image: no Linux container can measure a Windows host's CPU.
 
 ## The twelve stages
 
-| #   | Stage               | Module                                                      |
-| --- | ------------------- | ----------------------------------------------------------- |
-| 1   | Data Sources        | `pipeline/sources.py` — SQLite, CSV, HTTP, streaming        |
-| 2   | Data Engineering    | `pipeline/schema.py` — contract read from the database      |
-| 3   | ETL Pipeline        | `pipeline/etl.py` — sequences 1-6, records lineage          |
-| 4   | Data Validation     | `pipeline/validate.py` — 13 checks, PASS/WARN/FAIL          |
-| 5   | Data Cleaning       | `pipeline/clean.py` — dedupe, gap-segment, regrid, impute   |
-| 6   | Data Transformation | `pipeline/transform.py` — derive, normalise, roll up        |
-| 7   | Feature Engineering | `model/features.py` — gap-aware lags, rolling, interactions |
-| 8   | Feature Selection   | `model/selection.py` — variance, correlation, permutation   |
-| 9   | Feature Scaling     | `model/scaling.py` — standard/minmax/robust, train-only fit |
-| 10  | Feature Store       | `model/feature_store.py` — offline + online, versioned      |
-| 11  | ML Model            | `model/forecast.py`, `model/tuning.py`, `model/baseline.py` |
-| 12  | Deployment          | `tracking/`, `serving/` — gate, inference, drift            |
+| # | Stage | Module |
+|---|---|---|
+| 1 | Data Sources | `pipeline/sources.py` — SQLite, CSV, HTTP, streaming |
+| 2 | Data Engineering | `pipeline/schema.py` — contract read from the database |
+| 3 | ETL Pipeline | `pipeline/etl.py` — sequences 1-6, records lineage |
+| 4 | Data Validation | `pipeline/validate.py` — 13 checks, PASS/WARN/FAIL |
+| 5 | Data Cleaning | `pipeline/clean.py` — dedupe, gap-segment, regrid, impute |
+| 6 | Data Transformation | `pipeline/transform.py` — derive, normalise, roll up |
+| 7 | Feature Engineering | `model/features.py` — gap-aware lags, rolling, interactions |
+| 8 | Feature Selection | `model/selection.py` — variance, correlation, permutation |
+| 9 | Feature Scaling | `model/scaling.py` — standard/minmax/robust, train-only fit |
+| 10 | Feature Store | `model/feature_store.py` — offline + online, versioned |
+| 11 | ML Model | `model/forecast.py`, `model/tuning.py`, `model/baseline.py` |
+| 12 | Deployment | `tracking/`, `serving/` — gate, inference, drift |
 
 Plus `evaluation/backtest.py` for measured evidence and
 `service/` for allocation and cost.
@@ -162,15 +162,15 @@ of load-generator waves driving CPU across its full 1.7%–100% range.
 
 CPU, every predictor on the identical test window:
 
-| Predictor                                        | MAE       |
-| ------------------------------------------------ | --------- |
-| **GradientBoosting**                             | **4.998** |
-| persistence (next = current)                     | 5.559     |
-| ridge                                            | 5.734     |
-| persistence_lag1 (next = value _before_ current) | 6.856     |
-| drift (current + slope)                          | 9.575     |
-| seasonal naive                                   | 12.507    |
-| rolling mean                                     | 12.733    |
+| Predictor | MAE |
+|---|---|
+| **GradientBoosting** | **4.998** |
+| persistence (next = current) | 5.559 |
+| ridge | 5.734 |
+| persistence_lag1 (next = value *before* current) | 6.856 |
+| drift (current + slope) | 9.575 |
+| seasonal naive | 12.507 |
+| rolling mean | 12.733 |
 
 The model beats persistence by **10.09%** here. That result does not hold
 up.
@@ -180,12 +180,12 @@ up.
 Rolling-origin cross-validation, the same comparison across four
 expanding folds:
 
-| Fold | Train rows | Model      | Persistence | Winner      |
-| ---- | ---------- | ---------- | ----------- | ----------- |
-| 0    | 272        | **16.220** | 4.298       | persistence |
-| 1    | 374        | 5.660      | 5.648       | persistence |
-| 2    | 476        | 5.779      | 6.331       | model       |
-| 3    | 578        | 4.880      | 5.310       | model       |
+| Fold | Train rows | Model | Persistence | Winner |
+|---|---|---|---|---|
+| 0 | 272 | **16.220** | 4.298 | persistence |
+| 1 | 374 | 5.660 | 5.648 | persistence |
+| 2 | 476 | 5.779 | 6.331 | model |
+| 3 | 578 | 4.880 | 5.310 | model |
 
 Model **8.135 ± 4.681**. Persistence **5.397 ± 0.733**. Two folds each.
 
@@ -212,7 +212,7 @@ legitimate deployed state: the measured best predictor is the one
 serving. Deploying a model that won once, because it happens to be the
 one that got trained, is the failure the gate exists to prevent.
 
-The CV-stability criterion was added _because_ of this result — a single
+The CV-stability criterion was added *because* of this result — a single
 holdout had already passed a model that cross-validation shows is not
 reliably better.
 
@@ -221,19 +221,19 @@ reliably better.
 Replaying 35 allocation decisions using only the data available at each
 moment:
 
-| Policy                      | $/month    | Worst breach | Saving    | SLA met |
-| --------------------------- | ---------- | ------------ | --------- | ------- |
-| predictive, no safety floor | 264.01     | 39.00%       | 30.57%    | **no**  |
-| oracle (perfect foresight)  | 275.44     | 0.00%        | 27.56%    | yes     |
-| predictive                  | 362.32     | 8.43%        | 4.71%     | **no**  |
-| **reactive P95 (no model)** | **370.66** | **4.14%**    | **2.52%** | **yes** |
-| static 100%                 | 380.24     | 0.00%        | —         | yes     |
+| Policy | $/month | Worst breach | Saving | SLA met |
+|---|---|---|---|---|
+| predictive, no safety floor | 264.01 | 39.00% | 30.57% | **no** |
+| oracle (perfect foresight) | 275.44 | 0.00% | 27.56% | yes |
+| predictive | 362.32 | 8.43% | 4.71% | **no** |
+| **reactive P95 (no model)** | **370.66** | **4.14%** | **2.52%** | **yes** |
+| static 100% | 380.24 | 0.00% | — | yes |
 
 Two things a snapshot cannot show:
 
 - **The safety floor's price.** Removing it saves 30.57% and breaches
   39% of the time. The floor buys compliance by giving back most of the
-  saving. That trade _is_ the finding.
+  saving. That trade *is* the finding.
 - **Most of the value is in the policy, not the forecast.** A trailing
   P95 with no model reaches 2.52% and stays inside the SLA. The
   model-driven policy saves more only by breaching more.
@@ -258,7 +258,7 @@ flags every synthetic row as `is_imputed`.
 
 **A baseline measured two steps back.** The previous feature set began at
 `lag_1` while the target was `shift(-1)`, so the "naive" prediction came
-from the sample _before_ the one being predicted. That is a two-step
+from the sample *before* the one being predicted. That is a two-step
 problem labelled as one step, and the gap between the two baselines was
 being reported as model accuracy. `features.lags` now starts at 0 and
 both rungs stay on the ladder so the difference is visible.

@@ -97,6 +97,7 @@ def definition_id(target, feature_columns):
 
     payload = json.dumps({
         "target": target,
+        "features": sorted(feature_columns),
         "config": config.feature_fingerprint(),
     }, separators=(",", ":"))
     return hashlib.sha256(payload.encode()).hexdigest()[:12]

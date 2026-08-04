@@ -815,7 +815,7 @@ if tab_capacity is not None:
             "Capacity",
             "Allocation units for each resource, filled to current usage, "
             "with the forecast peak and the alert threshold marked. When the "
-            "When the forecast crosses the threshold a proposed additional unit "
+            "forecast crosses the threshold a proposed additional unit "
             "appears beside it.",
         )
 
@@ -828,17 +828,15 @@ if tab_capacity is not None:
         def get_current_usage(target, fallback_df):
             """The absolute most recent raw metric from the collector."""
             try:
-                import sqlite3
-                import config
-                con = sqlite3.connect(config.DB_PATH)
-                con.row_factory = sqlite3.Row
-                cur = con.cursor()
-                cur.execute("SELECT * FROM metrics ORDER BY ts DESC LIMIT 1")
-                row = cur.fetchone()
-                con.close()
-                if row and target in row.keys():
-                    return float(row[target])
-            except Exception:
+                from database.connection import get_connection
+                con = get_connection()
+                if con:
+                    df = pd.read_sql_query(
+                        "SELECT * FROM metrics ORDER BY ts DESC LIMIT 1", con)
+                    con.close()
+                    if not df.empty and target in df.columns:
+                        return float(df[target].iloc[0])
+            except Exception:                                     # noqa: BLE001
                 pass
 
             if not fallback_df.empty and target in fallback_df.columns:
